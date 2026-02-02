@@ -1,8 +1,8 @@
 {
-  "name": "coffee-companion-backend",
+  "name": "brewbuddy-backend",
   "version": "1.0.0",
   "type": "module",
-  "description": "Backend for Coffee Companion PWA",
+  "description": "Backend for BrewBuddy PWA",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
