@@ -285,6 +285,24 @@ export const queries = {
         }
     },
     
+    /**
+     * Bind device to user
+     */
+    async bindDevice(userId, deviceId, deviceInfo) {
+        const db = getDatabase();
+        if (dbType === 'postgresql') {
+            await db.run(
+                'UPDATE users SET device_id = $1, device_info = $2, last_login_at = CURRENT_TIMESTAMP WHERE id = $3',
+                [deviceId, deviceInfo, userId]
+            );
+        } else {
+            await db.run(
+                'UPDATE users SET device_id = ?, device_info = ?, last_login_at = CURRENT_TIMESTAMP WHERE id = ?',
+                [deviceId, deviceInfo, userId]
+            );
+        }
+    },
+    
     async getUserCount() {
         const db = getDatabase();
         const result = await db.get('SELECT COUNT(*) as count FROM users');
