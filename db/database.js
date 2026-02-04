@@ -93,14 +93,12 @@ export async function initDatabase() {
  * Create PostgreSQL tables with device binding
  */
 async function createPostgreSQLTables() {
+    // Schritt 1: Tabellen erstellen
     await db.exec(`
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
             username TEXT NOT NULL UNIQUE,
             token TEXT NOT NULL UNIQUE,
-            device_id TEXT UNIQUE,
-            device_info TEXT,
-            last_login_at TIMESTAMP,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
 
@@ -111,7 +109,23 @@ async function createPostgreSQLTables() {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         );
-
+    `);
+    
+    // Schritt 2: Spalten hinzufügen (falls nicht vorhanden)
+    try {
+        await db.pool.query(`
+            ALTER TABLE users 
+            ADD COLUMN IF NOT EXISTS device_id TEXT,
+            ADD COLUMN IF NOT EXISTS device_info TEXT,
+            ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP;
+        `);
+    } catch (err) {
+        // Spalten existieren schon, das ist OK
+        console.log('Note: device columns may already exist');
+    }
+    
+    // Schritt 3: Indices erstellen (NACH den Spalten!)
+    await db.exec(`
         CREATE INDEX IF NOT EXISTS idx_coffees_user_id ON coffees(user_id);
         CREATE INDEX IF NOT EXISTS idx_users_token ON users(token);
         CREATE INDEX IF NOT EXISTS idx_users_device_id ON users(device_id);
