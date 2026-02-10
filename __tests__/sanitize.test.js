@@ -34,6 +34,12 @@ describe('Sanitization Utilities', () => {
         test('should handle strings without HTML', () => {
             expect(stripHTML('Plain text')).toBe('Plain text');
         });
+
+        test('should remove HTML entities', () => {
+            expect(stripHTML('&lt;script&gt;')).toBe('script');
+            expect(stripHTML('&amp;')).toBe('');
+            expect(stripHTML('Test&nbsp;Text')).toBe('TestText');
+        });
     });
 
     describe('truncateString', () => {

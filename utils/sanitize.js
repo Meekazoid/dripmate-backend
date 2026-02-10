@@ -4,13 +4,18 @@
 
 /**
  * Strip HTML tags from a string
+ * Note: This is a basic regex-based approach for defense-in-depth.
+ * It removes HTML tags but does not handle all XSS vectors.
+ * Frontend should also implement proper sanitization (e.g., DOMPurify).
  * @param {string} str - Input string
  * @returns {string} - String with HTML tags removed
  */
 export function stripHTML(str) {
     if (typeof str !== 'string') return '';
-    // Remove HTML tags using regex
-    return str.replace(/<[^>]*>/g, '');
+    // Remove HTML tags and entities using regex
+    return str
+        .replace(/<[^>]*>/g, '')        // Remove HTML tags
+        .replace(/&[^;]+;/g, '');       // Remove HTML entities
 }
 
 /**
@@ -36,7 +41,7 @@ export function cleanAltitude(altitude) {
     // Strip HTML first
     const cleaned = stripHTML(str);
     // Keep only digits, hyphens, spaces, and the word "masl"
-    const result = cleaned.replace(/[^0-9\-\s]/gi, '');
+    const result = cleaned.replace(/[^0-9\-\s]/g, '');
     return truncateString(result.trim(), 50);
 }
 
