@@ -1,6 +1,23 @@
 // ==========================================
 // SANITIZATION UTILITIES
 // ==========================================
+//
+// SECURITY NOTE: This module provides basic regex-based sanitization for
+// defense-in-depth. It is NOT a complete XSS prevention solution.
+//
+// Known limitations of regex-based HTML stripping:
+// - May not catch all malformed HTML edge cases
+// - Does not handle JavaScript in attributes (e.g., onclick, onerror)
+// - Does not decode all possible HTML entity encodings
+//
+// Defense-in-depth strategy:
+// 1. This backend sanitization provides a first layer of defense
+// 2. Frontend MUST also sanitize user-facing output (e.g., using DOMPurify)
+// 3. Database stores sanitized data to prevent persistence of malicious content
+//
+// This approach meets the requirements for no external dependencies while
+// acknowledging that complete XSS prevention requires multiple layers.
+// ==========================================
 
 /**
  * Strip HTML tags from a string
