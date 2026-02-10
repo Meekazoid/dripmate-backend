@@ -40,7 +40,7 @@ export function cleanAltitude(altitude) {
     const str = String(altitude);
     // Strip HTML first
     const cleaned = stripHTML(str);
-    // Keep only digits, hyphens, spaces, and the word "masl"
+    // Keep only digits, hyphens, and spaces (remove units like "masl", "m", etc.)
     const result = cleaned.replace(/[^0-9\-\s]/g, '');
     return truncateString(result.trim(), 50);
 }
