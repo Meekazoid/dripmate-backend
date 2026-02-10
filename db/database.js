@@ -77,13 +77,13 @@ export async function initDatabase() {
         let sqlite3;
         let sqliteOpen;
         try {
-            const sqlite3Module = await import('sqlite3');
-            sqlite3 = sqlite3Module.default;
-            const sqliteModule = await import('sqlite');
-            sqliteOpen = sqliteModule.open;
+            const { default: sqlite3Module } = await import('sqlite3');
+            sqlite3 = sqlite3Module;
+            const { open } = await import('sqlite');
+            sqliteOpen = open;
         } catch (e) {
-            // sqlite3 is optional — only needed in development
-            console.error('❌ sqlite3 is required for development. Run: npm install');
+            // sqlite3 is optional and only needed when using SQLite (development mode)
+            console.error('❌ sqlite3 module not found. Install it with: npm install');
             throw e;
         }
         
