@@ -1,28 +1,28 @@
 // ==========================================
-// GRINDER PREFERENCE ENDPOINTS (V5.2)
+// METHOD PREFERENCE ENDPOINTS (V5.2 — NEW)
 // ==========================================
 
 import express from 'express';
 import { authenticateUser } from '../middleware/auth.js';
-import { queries, VALID_GRINDERS } from '../db/database.js';
+import { queries, VALID_METHODS } from '../db/database.js';
 
 const router = express.Router();
 
 /**
- * Get Grinder Preference
+ * Get Method Preference
  * GET /
  */
 router.get('/', authenticateUser, async (req, res) => {
     try {
-        const grinder = await queries.getGrinderPreference(req.user.id);
+        const method = await queries.getMethodPreference(req.user.id);
 
         res.json({ 
             success: true, 
-            grinder: grinder 
+            method: method 
         });
 
     } catch (error) {
-        console.error('Get grinder error:', error.message);
+        console.error('Get method error:', error.message);
         res.status(500).json({ 
             success: false,
             error: 'Server error' 
@@ -31,31 +31,31 @@ router.get('/', authenticateUser, async (req, res) => {
 });
 
 /**
- * Update Grinder Preference
+ * Update Method Preference
  * POST /
  */
 router.post('/', authenticateUser, async (req, res) => {
     try {
-        const { grinder } = req.body;
+        const { method } = req.body;
 
-        if (!grinder || !VALID_GRINDERS.includes(grinder)) {
+        if (!method || !VALID_METHODS.includes(method)) {
             return res.status(400).json({ 
                 success: false,
-                error: `Valid grinder required. Options: ${VALID_GRINDERS.join(', ')}` 
+                error: `Valid method required. Options: ${VALID_METHODS.join(', ')}` 
             });
         }
 
-        await queries.updateGrinderPreference(req.user.id, grinder);
+        await queries.updateMethodPreference(req.user.id, method);
 
-        console.log(`⚙️ Grinder updated: ${req.user.username} → ${grinder}`);
+        console.log(`☕ Method updated: ${req.user.username} → ${method}`);
 
         res.json({ 
             success: true,
-            grinder: grinder
+            method: method
         });
 
     } catch (error) {
-        console.error('Update grinder error:', error.message);
+        console.error('Update method error:', error.message);
         res.status(500).json({ 
             success: false,
             error: 'Server error' 

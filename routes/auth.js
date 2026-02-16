@@ -1,5 +1,5 @@
 // ==========================================
-// AUTHENTICATION ENDPOINTS
+// AUTHENTICATION ENDPOINTS (V5.2)
 // ==========================================
 
 import express from 'express';
@@ -64,7 +64,8 @@ router.get('/validate', async (req, res) => {
                 id: user.id,
                 username: user.username,
                 deviceId: user.device_id || deviceId,
-                grinderPreference: user.grinder_preference || 'fellow',
+                grinderPreference: user.grinder_preference || 'fellow_gen2',
+                methodPreference: user.method_preference || 'v60',
                 waterHardness: user.water_hardness || null,
                 createdAt: user.created_at
             }
