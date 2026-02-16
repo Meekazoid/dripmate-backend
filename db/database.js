@@ -1,6 +1,6 @@
 // ==========================================
-// BREWBUDDY DATABASE MODULE V4
-// Mit Device-Binding + Grinder + Water Hardness Support
+// DRIPMATE DATABASE MODULE V5.2
+// Device-Binding + Grinder Variants (8) + Method Preference + Water Hardness
 // ==========================================
 
 import pg from 'pg';
@@ -12,6 +12,16 @@ const { Pool } = pg;
 
 let db = null;
 let dbType = null;
+
+// ── Valid Values (exported for route validation) ──
+const VALID_GRINDERS = [
+    'comandante_mk4', 'comandante_mk3',
+    'fellow_gen2', 'fellow_gen1',
+    'timemore_s3', 'timemore_c2',
+    '1zpresso', 'baratza',
+];
+
+const VALID_METHODS = ['v60', 'chemex', 'aeropress'];
 
 /**
  * Initialize database connection
@@ -73,14 +83,12 @@ export async function initDatabase() {
         console.log('📊 Initializing SQLite database...');
         dbType = 'sqlite';
         
-        // Lazy-load sqlite3 - only needed in development
         let sqlite3;
         let sqliteOpen;
         try {
             sqlite3 = (await import('sqlite3')).default;
             sqliteOpen = (await import('sqlite')).open;
         } catch (e) {
-            // sqlite3 is optional and only needed when using SQLite (development mode)
             console.error('❌ sqlite3 module not found. Install with: npm install sqlite3 sqlite');
             console.error('   Error:', e.message);
             throw e;
@@ -101,7 +109,7 @@ export async function initDatabase() {
 }
 
 /**
- * Create PostgreSQL tables with device binding, grinder preference, and water hardness
+ * Create PostgreSQL tables with auto-migration for grinder variants + method preference
  */
 async function createPostgreSQLTables() {
     // Schritt 1: Tabellen erstellen
@@ -122,7 +130,7 @@ async function createPostgreSQLTables() {
         );
     `);
     
-    // Schritt 2: Spalten hinzufügen (falls nicht vorhanden)
+    // Schritt 2: Spalten hinzufügen (idempotent via IF NOT EXISTS)
     try {
         await db.pool.query(`
             ALTER TABLE users 
@@ -130,13 +138,44 @@ async function createPostgreSQLTables() {
             ADD COLUMN IF NOT EXISTS device_info TEXT,
             ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP,
             ADD COLUMN IF NOT EXISTS grinder_preference TEXT DEFAULT 'fellow',
-            ADD COLUMN IF NOT EXISTS water_hardness DECIMAL(4,1) DEFAULT NULL;
+            ADD COLUMN IF NOT EXISTS water_hardness DECIMAL(4,1) DEFAULT NULL,
+            ADD COLUMN IF NOT EXISTS method_preference VARCHAR(20) DEFAULT 'v60';
         `);
     } catch (err) {
-        console.log('Note: columns may already exist');
+        console.log('Note: user columns may already exist');
+    }
+
+    // Schritt 2b: Method-Spalte auf coffees (per-Coffee Override)
+    try {
+        await db.pool.query(`
+            ALTER TABLE coffees
+            ADD COLUMN IF NOT EXISTS method VARCHAR(20) DEFAULT 'v60';
+        `);
+    } catch (err) {
+        console.log('Note: coffees.method column may already exist');
     }
     
-    // Schritt 3: Indices erstellen (NACH den Spalten!)
+    // Schritt 3: Migrate alte Grinder-Keys → neue versionierte Keys
+    try {
+        const migrations = [
+            { old: 'fellow',     new: 'fellow_gen2' },
+            { old: 'comandante', new: 'comandante_mk3' },
+            { old: 'timemore',   new: 'timemore_s3' },
+        ];
+        for (const m of migrations) {
+            const result = await db.pool.query(
+                `UPDATE users SET grinder_preference = $1 WHERE grinder_preference = $2`,
+                [m.new, m.old]
+            );
+            if (result.rowCount > 0) {
+                console.log(`🔄 Migrated ${result.rowCount} user(s): ${m.old} → ${m.new}`);
+            }
+        }
+    } catch (err) {
+        console.log('Note: grinder migration may have already run');
+    }
+    
+    // Schritt 4: Indices erstellen (NACH den Spalten!)
     await db.exec(`
         CREATE INDEX IF NOT EXISTS idx_coffees_user_id ON coffees(user_id);
         CREATE INDEX IF NOT EXISTS idx_users_token ON users(token);
@@ -146,7 +185,7 @@ async function createPostgreSQLTables() {
 }
 
 /**
- * Create SQLite tables with device binding, grinder preference, and water hardness
+ * Create SQLite tables (fresh DB gets new defaults, existing DB gets migrated)
  */
 async function createSQLiteTables() {
     await db.exec(`
@@ -157,8 +196,9 @@ async function createSQLiteTables() {
             device_id TEXT UNIQUE,
             device_info TEXT,
             last_login_at DATETIME,
-            grinder_preference TEXT DEFAULT 'fellow',
+            grinder_preference TEXT DEFAULT 'fellow_gen2',
             water_hardness REAL DEFAULT NULL,
+            method_preference TEXT DEFAULT 'v60',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
 
@@ -166,6 +206,7 @@ async function createSQLiteTables() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
             data TEXT NOT NULL,
+            method TEXT DEFAULT 'v60',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         );
@@ -175,6 +216,19 @@ async function createSQLiteTables() {
         CREATE INDEX IF NOT EXISTS idx_users_device_id ON users(device_id);
         CREATE INDEX IF NOT EXISTS idx_coffees_user_created ON coffees(user_id, created_at DESC);
     `);
+
+    // SQLite: migrate alte Keys (falls existierende V4 DB)
+    try {
+        await db.run(`UPDATE users SET grinder_preference = 'fellow_gen2' WHERE grinder_preference = 'fellow'`);
+        await db.run(`UPDATE users SET grinder_preference = 'comandante_mk3' WHERE grinder_preference = 'comandante'`);
+        await db.run(`UPDATE users SET grinder_preference = 'timemore_s3' WHERE grinder_preference = 'timemore'`);
+    } catch (err) {
+        // Silently ignore on fresh DB
+    }
+
+    // SQLite: add new columns if upgrading from V4
+    try { await db.run(`ALTER TABLE users ADD COLUMN method_preference TEXT DEFAULT 'v60'`); } catch (err) { /* already exists */ }
+    try { await db.run(`ALTER TABLE coffees ADD COLUMN method TEXT DEFAULT 'v60'`); } catch (err) { /* already exists */ }
 }
 
 export function getDatabase() {
@@ -237,7 +291,7 @@ export async function closeDatabase() {
 }
 
 /**
- * Query helpers mit Device-Binding, Grinder Preference und Water Hardness
+ * Query helpers
  */
 export const queries = {
     /**
@@ -248,24 +302,24 @@ export const queries = {
         if (dbType === 'postgresql') {
             if (deviceId) {
                 return db.get(
-                    'SELECT id, username, device_id, grinder_preference, water_hardness, created_at FROM users WHERE token = $1 AND device_id = $2', 
+                    'SELECT id, username, device_id, grinder_preference, method_preference, water_hardness, created_at FROM users WHERE token = $1 AND device_id = $2', 
                     [token, deviceId]
                 );
             } else {
                 return db.get(
-                    'SELECT id, username, device_id, grinder_preference, water_hardness, created_at FROM users WHERE token = $1', 
+                    'SELECT id, username, device_id, grinder_preference, method_preference, water_hardness, created_at FROM users WHERE token = $1', 
                     [token]
                 );
             }
         } else {
             if (deviceId) {
                 return db.get(
-                    'SELECT id, username, device_id, grinder_preference, water_hardness, created_at FROM users WHERE token = ? AND device_id = ?', 
+                    'SELECT id, username, device_id, grinder_preference, method_preference, water_hardness, created_at FROM users WHERE token = ? AND device_id = ?', 
                     [token, deviceId]
                 );
             } else {
                 return db.get(
-                    'SELECT id, username, device_id, grinder_preference, water_hardness, created_at FROM users WHERE token = ?', 
+                    'SELECT id, username, device_id, grinder_preference, method_preference, water_hardness, created_at FROM users WHERE token = ?', 
                     [token]
                 );
             }
@@ -273,22 +327,22 @@ export const queries = {
     },
     
     /**
-     * Create new user mit device binding und default grinder
+     * Create new user mit device binding und defaults
      */
     async createUser(username, token, deviceId, deviceInfo) {
         const db = getDatabase();
         if (dbType === 'postgresql') {
             const result = await db.get(
-                `INSERT INTO users (username, token, device_id, device_info, grinder_preference, last_login_at) 
-                 VALUES ($1, $2, $3, $4, 'fellow', CURRENT_TIMESTAMP) 
+                `INSERT INTO users (username, token, device_id, device_info, grinder_preference, method_preference, last_login_at) 
+                 VALUES ($1, $2, $3, $4, 'fellow_gen2', 'v60', CURRENT_TIMESTAMP) 
                  RETURNING id`,
                 [username, token, deviceId, deviceInfo]
             );
             return result.id;
         } else {
             const result = await db.run(
-                `INSERT INTO users (username, token, device_id, device_info, grinder_preference, last_login_at) 
-                 VALUES (?, ?, ?, ?, 'fellow', CURRENT_TIMESTAMP)`,
+                `INSERT INTO users (username, token, device_id, device_info, grinder_preference, method_preference, last_login_at) 
+                 VALUES (?, ?, ?, ?, 'fellow_gen2', 'v60', CURRENT_TIMESTAMP)`,
                 [username, token, deviceId, deviceInfo]
             );
             return result.lastID;
@@ -299,6 +353,9 @@ export const queries = {
      * Update grinder preference
      */
     async updateGrinderPreference(userId, grinder) {
+        if (!VALID_GRINDERS.includes(grinder)) {
+            throw new Error(`Invalid grinder: ${grinder}`);
+        }
         const db = getDatabase();
         if (dbType === 'postgresql') {
             await db.run(
@@ -323,18 +380,59 @@ export const queries = {
                 'SELECT grinder_preference FROM users WHERE id = $1',
                 [userId]
             );
-            return result?.grinder_preference || 'fellow';
+            return result?.grinder_preference || 'fellow_gen2';
         } else {
             const result = await db.get(
                 'SELECT grinder_preference FROM users WHERE id = ?',
                 [userId]
             );
-            return result?.grinder_preference || 'fellow';
+            return result?.grinder_preference || 'fellow_gen2';
+        }
+    },
+
+    /**
+     * Update method preference
+     */
+    async updateMethodPreference(userId, method) {
+        if (!VALID_METHODS.includes(method)) {
+            throw new Error(`Invalid method: ${method}`);
+        }
+        const db = getDatabase();
+        if (dbType === 'postgresql') {
+            await db.run(
+                'UPDATE users SET method_preference = $1 WHERE id = $2',
+                [method, userId]
+            );
+        } else {
+            await db.run(
+                'UPDATE users SET method_preference = ? WHERE id = ?',
+                [method, userId]
+            );
+        }
+    },
+
+    /**
+     * Get method preference
+     */
+    async getMethodPreference(userId) {
+        const db = getDatabase();
+        if (dbType === 'postgresql') {
+            const result = await db.get(
+                'SELECT method_preference FROM users WHERE id = $1',
+                [userId]
+            );
+            return result?.method_preference || 'v60';
+        } else {
+            const result = await db.get(
+                'SELECT method_preference FROM users WHERE id = ?',
+                [userId]
+            );
+            return result?.method_preference || 'v60';
         }
     },
     
     /**
-     * Update water hardness (NEW)
+     * Update water hardness
      */
     async updateWaterHardness(userId, waterHardness) {
         const db = getDatabase();
@@ -352,7 +450,7 @@ export const queries = {
     },
     
     /**
-     * Get water hardness (NEW)
+     * Get water hardness
      */
     async getWaterHardness(userId) {
         const db = getDatabase();
@@ -454,29 +552,29 @@ export const queries = {
         const db = getDatabase();
         if (dbType === 'postgresql') {
             return db.all(
-                'SELECT id, data, created_at FROM coffees WHERE user_id = $1 ORDER BY created_at DESC',
+                'SELECT id, data, method, created_at FROM coffees WHERE user_id = $1 ORDER BY created_at DESC',
                 [userId]
             );
         } else {
             return db.all(
-                'SELECT id, data, created_at FROM coffees WHERE user_id = ? ORDER BY created_at DESC',
+                'SELECT id, data, method, created_at FROM coffees WHERE user_id = ? ORDER BY created_at DESC',
                 [userId]
             );
         }
     },
     
-    async saveCoffee(userId, data) {
+    async saveCoffee(userId, data, method = 'v60') {
         const db = getDatabase();
         if (dbType === 'postgresql') {
             const result = await db.get(
-                'INSERT INTO coffees (user_id, data) VALUES ($1, $2) RETURNING id',
-                [userId, data]
+                'INSERT INTO coffees (user_id, data, method) VALUES ($1, $2, $3) RETURNING id',
+                [userId, data, method]
             );
             return result.id;
         } else {
             const result = await db.run(
-                'INSERT INTO coffees (user_id, data) VALUES (?, ?)',
-                [userId, data]
+                'INSERT INTO coffees (user_id, data, method) VALUES (?, ?, ?)',
+                [userId, data, method]
             );
             return result.lastID;
         }
@@ -492,6 +590,9 @@ export const queries = {
     }
 };
 
+// ── Export valid values for use in routes ──
+export { VALID_GRINDERS, VALID_METHODS };
+
 export default {
     initDatabase,
     getDatabase,
@@ -500,5 +601,7 @@ export default {
     beginTransaction,
     commit,
     rollback,
-    queries
+    queries,
+    VALID_GRINDERS,
+    VALID_METHODS
 };
