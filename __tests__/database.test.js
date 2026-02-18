@@ -77,9 +77,37 @@ describe('Database Module', () => {
                 process: 'washed'
             });
 
-            const coffeeId = await queries.saveCoffee(testUserId, coffeeData);
+            const coffeeId = await queries.saveCoffee(testUserId, 'coffee-1', coffeeData);
             expect(coffeeId).toBeDefined();
             expect(coffeeId).toBeGreaterThan(0);
+        });
+
+
+        test('should upsert coffee by stable uid (no duplicates)', async () => {
+            const first = JSON.stringify({ name: 'Coffee A', origin: 'Kenya' });
+            const second = JSON.stringify({ name: 'Coffee A Updated', origin: 'Kenya' });
+
+            await queries.saveCoffee(testUserId, 'stable-uid', first);
+            await queries.saveCoffee(testUserId, 'stable-uid', second);
+
+            const coffees = await queries.getUserCoffees(testUserId);
+            const sameUid = coffees.filter((c) => c.coffee_uid === 'stable-uid');
+
+            expect(sameUid.length).toBe(1);
+            expect(JSON.parse(sameUid[0].data).name).toBe('Coffee A Updated');
+        });
+
+        test('should replace user coffees and keep only provided uids', async () => {
+            await queries.saveCoffee(testUserId, 'keep-1', JSON.stringify({ name: 'Keep 1' }));
+            await queries.saveCoffee(testUserId, 'drop-1', JSON.stringify({ name: 'Drop 1' }));
+
+            await queries.replaceUserCoffees(testUserId, ['keep-1']);
+
+            const coffees = await queries.getUserCoffees(testUserId);
+            const uids = coffees.map((c) => c.coffee_uid);
+
+            expect(uids).toContain('keep-1');
+            expect(uids).not.toContain('drop-1');
         });
 
         test('should retrieve user coffees', async () => {

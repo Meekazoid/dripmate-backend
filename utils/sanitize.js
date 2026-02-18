@@ -121,8 +121,13 @@ export function sanitizeCoffeeData(coffeeData) {
     if (!coffeeData || typeof coffeeData !== 'object') {
         return {};
     }
-    
-    const sanitized = {};
+
+    // Keep unknown/legacy fields for backward compatibility.
+    const sanitized = { ...coffeeData };
+
+    const FEEDBACK_KEYS = ['bitterness', 'sweetness', 'acidity', 'body'];
+    const FEEDBACK_VALUES = ['low', 'balanced', 'high'];
+    const MAX_HISTORY_ENTRIES = 30;
     
     // Field-level constraints from requirements
     // These text fields are user-provided and need HTML stripping + truncation
@@ -153,6 +158,73 @@ export function sanitizeCoffeeData(coffeeData) {
     if (coffeeData.altitude !== undefined) {
         sanitized.altitude = cleanAltitude(coffeeData.altitude);
     }
+
+    // Validate feedback (known keys + low|balanced|high values), tolerate unknown keys.
+    if (coffeeData.feedback !== undefined) {
+        const feedback = coffeeData.feedback;
+        if (feedback && typeof feedback === 'object' && !Array.isArray(feedback)) {
+            const nextFeedback = {};
+
+            for (const [key, value] of Object.entries(feedback)) {
+                if (FEEDBACK_KEYS.includes(key) && typeof value === 'string') {
+                    const normalized = value.toLowerCase().trim();
+                    if (FEEDBACK_VALUES.includes(normalized)) {
+                        nextFeedback[key] = normalized;
+                    }
+                    continue;
+                }
+
+                // Keep unknown/legacy feedback keys as-is to avoid breaking older clients.
+                nextFeedback[key] = value;
+            }
+
+            sanitized.feedback = nextFeedback;
+        }
+    }
+
+    // Validate feedback history with type/format guards and hard server-side cap.
+    if (coffeeData.feedbackHistory !== undefined) {
+        if (Array.isArray(coffeeData.feedbackHistory)) {
+            const sanitizedHistory = coffeeData.feedbackHistory
+                .slice(-MAX_HISTORY_ENTRIES)
+                .map((entry) => {
+                    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return null;
+
+                    const sanitizedEntry = {};
+
+                    const date = new Date(entry.timestamp);
+                    if (!entry.timestamp || Number.isNaN(date.getTime())) return null;
+                    sanitizedEntry.timestamp = date.toISOString();
+
+                    if (typeof entry.previousGrind === 'string') {
+                        sanitizedEntry.previousGrind = truncateString(stripHTML(entry.previousGrind), 100);
+                    }
+                    if (typeof entry.newGrind === 'string') {
+                        sanitizedEntry.newGrind = truncateString(stripHTML(entry.newGrind), 100);
+                    }
+                    if (typeof entry.previousTemp === 'string') {
+                        sanitizedEntry.previousTemp = truncateString(stripHTML(entry.previousTemp), 50);
+                    }
+                    if (typeof entry.newTemp === 'string') {
+                        sanitizedEntry.newTemp = truncateString(stripHTML(entry.newTemp), 50);
+                    }
+                    if (typeof entry.grindOffsetDelta === 'number' && Number.isFinite(entry.grindOffsetDelta)) {
+                        sanitizedEntry.grindOffsetDelta = entry.grindOffsetDelta;
+                    }
+                    if (typeof entry.customTempApplied === 'boolean') {
+                        sanitizedEntry.customTempApplied = entry.customTempApplied;
+                    }
+                    if (typeof entry.resetToInitial === 'boolean') {
+                        sanitizedEntry.resetToInitial = entry.resetToInitial;
+                    }
+
+                    return sanitizedEntry;
+                })
+                .filter(Boolean);
+
+            sanitized.feedbackHistory = sanitizedHistory;
+        }
+    }
     
     // Preserve fields that don't need sanitization (dates, IDs, metadata)
     const nonStringFields = [
@@ -169,9 +241,9 @@ export function sanitizeCoffeeData(coffeeData) {
         'grindOffset',     // Integer: grinder-neutral adjustment
         'customTemp',      // String: user-adjusted temperature
         'customAmount',    // Number: user-adjusted coffee amount (grams)
-        'feedback',        // Object: brew feedback data
         'initialGrind',    // String: initial grind setting (for reset)
         'initialTemp',     // String: initial temperature (for reset)
+        // feedback / feedbackHistory handled with dedicated validation above
     ];
     
     for (const field of nonStringFields) {

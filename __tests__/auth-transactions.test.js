@@ -30,7 +30,7 @@ describe('Authentication and Transactions', () => {
                 process: 'washed'
             });
 
-            await queries.saveCoffee(testUserId, coffeeData);
+            await queries.saveCoffee(testUserId, 'tx-coffee-1', coffeeData);
             await commit();
 
             const coffees = await queries.getUserCoffees(testUserId);
@@ -51,7 +51,7 @@ describe('Authentication and Transactions', () => {
                     process: 'natural'
                 });
 
-                await queries.saveCoffee(testUserId, coffeeData);
+                await queries.saveCoffee(testUserId, 'tx-coffee-1', coffeeData);
 
                 // Simulate an error
                 throw new Error('Simulated error');
@@ -75,7 +75,7 @@ describe('Authentication and Transactions', () => {
             ];
 
             for (const coffee of initialCoffees) {
-                await queries.saveCoffee(testUserId, JSON.stringify(coffee));
+                await queries.saveCoffee(testUserId, `initial-${coffee.name}`, JSON.stringify(coffee));
             }
             await commit();
 
@@ -93,7 +93,7 @@ describe('Authentication and Transactions', () => {
                 
                 // Simulate partial save (error after 2 coffees)
                 for (let i = 0; i < 2; i++) {
-                    await queries.saveCoffee(testUserId, JSON.stringify(newCoffees[i]));
+                    await queries.saveCoffee(testUserId, `new-${i}`, JSON.stringify(newCoffees[i]));
                 }
                 
                 // Simulate error

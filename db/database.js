@@ -124,9 +124,11 @@ async function createPostgreSQLTables() {
         CREATE TABLE IF NOT EXISTS coffees (
             id SERIAL PRIMARY KEY,
             user_id INTEGER NOT NULL,
+            coffee_uid TEXT NOT NULL,
             data TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            UNIQUE(user_id, coffee_uid)
         );
     `);
     
@@ -153,6 +155,29 @@ async function createPostgreSQLTables() {
         `);
     } catch (err) {
         console.log('Note: coffees.method column may already exist');
+    }
+
+    // Schritt 2c: Stable key for idempotent coffee upserts
+    try {
+        await db.pool.query(`
+            ALTER TABLE coffees
+            ADD COLUMN IF NOT EXISTS coffee_uid TEXT;
+        `);
+        await db.pool.query(`
+            UPDATE coffees
+            SET coffee_uid = id::text
+            WHERE coffee_uid IS NULL OR coffee_uid = '';
+        `);
+        await db.pool.query(`
+            ALTER TABLE coffees
+            ALTER COLUMN coffee_uid SET NOT NULL;
+        `);
+        await db.pool.query(`
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_coffees_user_uid
+            ON coffees(user_id, coffee_uid);
+        `);
+    } catch (err) {
+        console.log('Note: coffees.coffee_uid migration may already exist');
     }
     
     // Schritt 3: Migrate alte Grinder-Keys → neue versionierte Keys
@@ -205,10 +230,12 @@ async function createSQLiteTables() {
         CREATE TABLE IF NOT EXISTS coffees (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
+            coffee_uid TEXT NOT NULL,
             data TEXT NOT NULL,
             method TEXT DEFAULT 'v60',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            UNIQUE(user_id, coffee_uid)
         );
 
         CREATE INDEX IF NOT EXISTS idx_coffees_user_id ON coffees(user_id);
@@ -229,6 +256,15 @@ async function createSQLiteTables() {
     // SQLite: add new columns if upgrading from V4
     try { await db.run(`ALTER TABLE users ADD COLUMN method_preference TEXT DEFAULT 'v60'`); } catch (err) { /* already exists */ }
     try { await db.run(`ALTER TABLE coffees ADD COLUMN method TEXT DEFAULT 'v60'`); } catch (err) { /* already exists */ }
+    try { await db.run(`ALTER TABLE coffees ADD COLUMN coffee_uid TEXT`); } catch (err) { /* already exists */ }
+
+    try {
+        await db.run(`UPDATE coffees SET coffee_uid = CAST(id AS TEXT) WHERE coffee_uid IS NULL OR coffee_uid = ''`);
+    } catch (err) {
+        // ignore
+    }
+
+    try { await db.run(`CREATE UNIQUE INDEX IF NOT EXISTS idx_coffees_user_uid ON coffees(user_id, coffee_uid)`); } catch (err) { /* already exists */ }
 }
 
 export function getDatabase() {
@@ -552,31 +588,57 @@ export const queries = {
         const db = getDatabase();
         if (dbType === 'postgresql') {
             return db.all(
-                'SELECT id, data, method, created_at FROM coffees WHERE user_id = $1 ORDER BY created_at DESC',
+                'SELECT id, coffee_uid, data, method, created_at FROM coffees WHERE user_id = $1 ORDER BY created_at DESC',
                 [userId]
             );
         } else {
             return db.all(
-                'SELECT id, data, method, created_at FROM coffees WHERE user_id = ? ORDER BY created_at DESC',
+                'SELECT id, coffee_uid, data, method, created_at FROM coffees WHERE user_id = ? ORDER BY created_at DESC',
                 [userId]
             );
         }
     },
     
-    async saveCoffee(userId, data, method = 'v60') {
+    async saveCoffee(userId, coffeeUid, data, method = 'v60') {
         const db = getDatabase();
         if (dbType === 'postgresql') {
             const result = await db.get(
-                'INSERT INTO coffees (user_id, data, method) VALUES ($1, $2, $3) RETURNING id',
-                [userId, data, method]
+                `INSERT INTO coffees (user_id, coffee_uid, data, method)
+                 VALUES ($1, $2, $3, $4)
+                 ON CONFLICT(user_id, coffee_uid)
+                 DO UPDATE SET data = EXCLUDED.data, method = EXCLUDED.method, created_at = CURRENT_TIMESTAMP
+                 RETURNING id`,
+                [userId, coffeeUid, data, method]
             );
             return result.id;
         } else {
             const result = await db.run(
-                'INSERT INTO coffees (user_id, data, method) VALUES (?, ?, ?)',
-                [userId, data, method]
+                `INSERT INTO coffees (user_id, coffee_uid, data, method)
+                 VALUES (?, ?, ?, ?)
+                 ON CONFLICT(user_id, coffee_uid)
+                 DO UPDATE SET data = excluded.data, method = excluded.method, created_at = CURRENT_TIMESTAMP`,
+                [userId, coffeeUid, data, method]
             );
             return result.lastID;
+        }
+    },
+
+    async replaceUserCoffees(userId, keepCoffeeUids = []) {
+        const db = getDatabase();
+        if (!Array.isArray(keepCoffeeUids) || keepCoffeeUids.length === 0) {
+            if (dbType === 'postgresql') {
+                await db.run('DELETE FROM coffees WHERE user_id = $1', [userId]);
+            } else {
+                await db.run('DELETE FROM coffees WHERE user_id = ?', [userId]);
+            }
+            return;
+        }
+
+        if (dbType === 'postgresql') {
+            await db.run('DELETE FROM coffees WHERE user_id = $1 AND coffee_uid <> ALL($2::text[])', [userId, keepCoffeeUids]);
+        } else {
+            const placeholders = keepCoffeeUids.map(() => '?').join(', ');
+            await db.run(`DELETE FROM coffees WHERE user_id = ? AND coffee_uid NOT IN (${placeholders})`, [userId, ...keepCoffeeUids]);
         }
     },
     
