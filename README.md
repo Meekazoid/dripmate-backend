@@ -20,7 +20,7 @@ A coffee brewing assistant backend API with AI-powered coffee bag analysis using
 - Node.js >= 18.0.0
 - npm or yarn
 - Anthropic API key (for AI features)
-- PostgreSQL (for production) or SQLite (for development)
+- Database: PostgreSQL (for production) or SQLite (for development, default)
 
 ## 🔧 Installation
 
@@ -137,8 +137,7 @@ DATABASE_URL=postgresql://user:password@host:5432/dbname
 - **express**: Web framework
 - **cors**: CORS middleware
 - **dotenv**: Environment variable management
-- **pg**: PostgreSQL client
-- **sqlite3**: SQLite client (optional, for development)
+- **pg**: PostgreSQL client (for production)
 - **express-rate-limit**: API rate limiting
 - **uuid**: UUID generation
 
@@ -146,8 +145,7 @@ DATABASE_URL=postgresql://user:password@host:5432/dbname
 - **jest**: Testing framework
 
 ### Optional Dependencies
-- **sqlite3**: SQLite client (required for development mode unless using PostgreSQL)
-- **sqlite**: SQLite wrapper
+- **sqlite3** & **sqlite**: SQLite database support (automatically used in development mode)
 
 ## 🔄 Recent Updates (v5.0)
 
