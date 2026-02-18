@@ -194,6 +194,49 @@ describe('Sanitization Utilities', () => {
             expect(result.altitude).toBe('1500');
         });
 
+
+        test('should validate feedback keys and values while keeping unknown keys', () => {
+            const input = {
+                feedback: {
+                    bitterness: 'HIGH',
+                    sweetness: 'balanced',
+                    acidity: 'low',
+                    body: 'invalid',
+                    legacyKey: 'keep-me'
+                }
+            };
+
+            const result = sanitizeCoffeeData(input);
+
+            expect(result.feedback).toEqual({
+                bitterness: 'high',
+                sweetness: 'balanced',
+                acidity: 'low',
+                legacyKey: 'keep-me'
+            });
+        });
+
+        test('should cap feedbackHistory to 30 and validate entry types', () => {
+            const entries = Array.from({ length: 35 }, (_, i) => ({
+                timestamp: new Date(Date.UTC(2025, 0, i + 1)).toISOString(),
+                previousGrind: `old-${i}`,
+                newGrind: `new-${i}`,
+                previousTemp: '92',
+                newTemp: '93',
+                grindOffsetDelta: 0.5,
+                customTempApplied: i % 2 === 0,
+                resetToInitial: i % 3 === 0,
+            }));
+            entries.push({ timestamp: 'not-a-date', previousGrind: 'x' });
+
+            const result = sanitizeCoffeeData({ feedbackHistory: entries });
+
+            expect(Array.isArray(result.feedbackHistory)).toBe(true);
+            expect(result.feedbackHistory.length).toBe(29);
+            expect(result.feedbackHistory[0].previousGrind).toBe('old-6');
+            expect(result.feedbackHistory[result.feedbackHistory.length - 1].newGrind).toBe('new-34');
+        });
+
         test('should preserve non-string fields', () => {
             const now = new Date().toISOString();
             const input = {
