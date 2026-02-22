@@ -123,9 +123,6 @@ app.use('/api/health', healthRoutes);
 app.use('/api/admin', adminRouter);
 app.use('/api/auth/register', registerRoute);
 
-app.get('/register.html', (req, res) => {
-    res.redirect('/api/auth/register');
-});
 
 // ==========================================
 // ERROR HANDLING
