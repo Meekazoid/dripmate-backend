@@ -57,13 +57,13 @@ function getEmailTemplate(email, token) {
                                     </table>
 
                                     <p style="margin:0 0 14px;font-size:0.92rem;line-height:1.75;color:#555;">
-                                        Open drip·mate and enter your token during registration. It can be used once and is linked to your device for secure access.
+                                        Open drip·mate and enter your token. It can be used once and is linked to your device for secure access.
                                     </p>
 
                                     <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;">
                                         <tr>
                                             <td align="center">
-                                                <a href="https://dripmate.app/register.html" style="display:inline-block;background:#8b6f47;color:#fff;text-decoration:none;padding:13px 28px;border-radius:10px;font-weight:600;letter-spacing:0.04em;">Start registration</a>
+                                                <a href="https://dripmate.app" style="display:inline-block;background:#8b6f47;color:#fff;text-decoration:none;padding:13px 28px;border-radius:10px;font-weight:600;letter-spacing:0.04em;">Start registration</a>
                                             </td>
                                         </tr>
                                     </table>
