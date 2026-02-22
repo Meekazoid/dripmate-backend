@@ -123,6 +123,7 @@ app.use('/api/health', healthRoutes);
 app.use('/api/admin', adminRouter);
 app.use('/api/auth/register', registerRoute);
 
+
 // ==========================================
 // ERROR HANDLING
 // ==========================================

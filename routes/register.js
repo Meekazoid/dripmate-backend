@@ -1,6 +1,6 @@
 // ==========================================
 // REGISTER ENDPOINT
-// Whitelist-Check → Token generieren → Mail senden
+// Whitelist check → generate token → send mail
 // ==========================================
 
 import express from 'express';
@@ -9,9 +9,9 @@ import { getDatabase, getDatabaseType } from '../db/database.js';
 
 const router = express.Router();
 
-// ── Token generieren: BREW-XXXXXX ──────────────────
+// ── Generate token: BREW-XXXXXX ──────────────────
 function generateToken() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // ohne 0/O/1/I – lesbarer
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let token = 'BREW-';
     for (let i = 0; i < 6; i++) {
         token += chars[randomBytes(1)[0] % chars.length];
@@ -19,7 +19,76 @@ function generateToken() {
     return token;
 }
 
-// ── Mail versenden via Resend ───────────────────────
+function getEmailTemplate(email, token) {
+    return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="margin:0;padding:0;background:#f4efe7;font-family:'Inter','Helvetica Neue',Arial,sans-serif;color:#1a1a1a;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4efe7;padding:40px 16px;">
+                <tr>
+                    <td align="center">
+                        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
+
+                            <tr>
+                                <td style="padding-bottom:20px;text-align:center;">
+                                    <p style="margin:0 0 8px;font-size:1.35rem;letter-spacing:0.08em;color:#2a2a2a;font-weight:600;">drip·mate</p>
+                                    <p style="margin:0;font-size:0.75rem;letter-spacing:0.24em;text-transform:uppercase;color:#8b6f47;">beta invitation</p>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="background:#fff;border:1px solid #e8dfd2;border-radius:20px;padding:34px 28px;box-shadow:0 8px 30px rgba(93,72,43,0.08);">
+                                    <h1 style="margin:0 0 14px;font-size:1.7rem;font-weight:600;color:#1f1f1f;">Welcome to drip·mate ☕</h1>
+                                    <p style="margin:0 0 22px;font-size:1rem;line-height:1.7;color:#4b4b4b;">
+                                        We're so glad you're here. Your early access invite is ready, and this personal token will unlock your beta signup:
+                                    </p>
+
+                                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+                                        <tr>
+                                            <td style="background:#fbf8f3;border:1px solid #d8c5ab;border-radius:12px;padding:20px;text-align:center;">
+                                                <p style="margin:0 0 8px;font-size:0.68rem;letter-spacing:0.2em;text-transform:uppercase;color:#9f8f79;">Your invite token</p>
+                                                <p style="margin:0;font-size:2rem;font-family:'Courier New',Courier,monospace;letter-spacing:0.12em;color:#8b6f47;font-weight:700;">${token}</p>
+                                            </td>
+                                        </tr>
+                                    </table>
+
+                                    <p style="margin:0 0 14px;font-size:0.92rem;line-height:1.75;color:#555;">
+                                        Open drip·mate and enter your token during registration. It can be used once and is linked to your device for secure access.
+                                    </p>
+
+                                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;">
+                                        <tr>
+                                            <td align="center">
+                                                <a href="https://dripmate.app/register.html" style="display:inline-block;background:#8b6f47;color:#fff;text-decoration:none;padding:13px 28px;border-radius:10px;font-weight:600;letter-spacing:0.04em;">Start registration</a>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td style="padding-top:18px;text-align:center;">
+                                    <p style="margin:0;font-size:0.74rem;line-height:1.7;color:#938674;">
+                                        This email was sent to ${email}.<br>
+                                        You received it because you were invited to the drip·mate beta.
+                                    </p>
+                                </td>
+                            </tr>
+
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </body>
+        </html>
+    `;
+}
+
+// ── Send mail with Resend ───────────────────────
 async function sendTokenMail(email, token) {
     const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
@@ -30,116 +99,8 @@ async function sendTokenMail(email, token) {
         body: JSON.stringify({
             from: 'drip·mate <hello@dripmate.app>',
             to: email,
-            subject: 'Dein dripmate Beta-Zugang ☕',
-            html: `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                </head>
-                <body style="margin:0;padding:0;background:#f5f5f0;font-family:'Helvetica Neue',Arial,sans-serif;">
-                    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f0;padding:48px 20px;">
-                        <tr>
-                            <td align="center">
-                                <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
-
-                                    <!-- Header: Logo + Brand -->
-                                    <tr>
-                                        <td style="padding-bottom:28px;">
-                                            <table cellpadding="0" cellspacing="0">
-                                                <tr>
-                                                    <td style="vertical-align:middle;padding-right:14px;">
-                                                        <img src="https://dripmate.app/logo_dunkel_light.svg"
-                                                             alt="drip·mate"
-                                                             width="48"
-                                                             height="48"
-                                                             style="display:block;width:48px;height:48px;">
-                                                    </td>
-                                                    <td style="vertical-align:middle;">
-                                                        <p style="margin:0 0 3px;font-size:1.5rem;font-weight:200;letter-spacing:0.32em;color:#000000;line-height:1;">
-                                                            d r i p<span style="color:#8b6f47;margin:0 0.1em;">·</span>m a t e
-                                                        </p>
-                                                        <p style="margin:0;font-size:0.58rem;font-weight:300;letter-spacing:0.22em;text-transform:uppercase;color:#8b6f47;opacity:0.8;">
-                                                            Precision meets Ritual.
-                                                        </p>
-                                                    </td>
-                                                </tr>
-                                            </table>
-                                        </td>
-                                    </tr>
-
-                                    <!-- Card -->
-                                    <tr>
-                                        <td style="background:#ffffff;border:1px solid #e0e0e0;border-radius:20px;padding:40px 36px;">
-
-                                            <p style="margin:0 0 8px;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.2em;color:#aaaaaa;font-weight:400;">
-                                                Beta-Zugang
-                                            </p>
-
-                                            <p style="margin:0 0 32px;font-size:1rem;color:#1a1a1a;line-height:1.6;font-weight:300;">
-                                                Willkommen bei dripmate.<br>
-                                                Hier ist dein persönlicher Zugangs-Token:
-                                            </p>
-
-                                            <!-- Token Box -->
-                                            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
-                                                <tr>
-                                                    <td style="background:#faf8f5;border:1.5px solid #8b6f47;border-radius:12px;padding:24px 20px;text-align:center;">
-                                                        <p style="margin:0 0 8px;font-size:0.6rem;text-transform:uppercase;letter-spacing:0.22em;color:#aaaaaa;">
-                                                            Dein Token
-                                                        </p>
-                                                        <p style="margin:0;font-size:2rem;font-family:'Courier New',Courier,monospace;letter-spacing:0.12em;color:#8b6f47;font-weight:600;">
-                                                            ${token}
-                                                        </p>
-                                                    </td>
-                                                </tr>
-                                            </table>
-
-                                            <!-- Text -->
-                                            <p style="margin:0 0 8px;font-size:0.88rem;color:#444444;line-height:1.8;font-weight:300;">
-                                                Öffne dripmate und gib diesen Token ein um dich anzumelden. Der Token ist einmalig und wird an dein Gerät gebunden. Installiere die App über den Browser auf deinem Homescreen.
-                                            </p>
-
-                                            <!-- Divider -->
-                                            <table width="100%" cellpadding="0" cellspacing="0" style="margin:28px 0;">
-                                                <tr>
-                                                    <td style="border-top:1px solid #e8e8e8;"></td>
-                                                </tr>
-                                            </table>
-
-                                            <!-- CTA -->
-                                            <table width="100%" cellpadding="0" cellspacing="0">
-                                                <tr>
-                                                    <td align="center">
-                                                        <a href="https://dripmate.app"
-                                                           style="display:inline-block;background:#8b6f47;color:#ffffff;text-decoration:none;padding:14px 36px;border-radius:10px;font-size:0.88rem;font-weight:600;letter-spacing:0.05em;">
-                                                            dripmate öffnen
-                                                        </a>
-                                                    </td>
-                                                </tr>
-                                            </table>
-
-                                        </td>
-                                    </tr>
-
-                                    <!-- Footer -->
-                                    <tr>
-                                        <td style="padding-top:24px;">
-                                            <p style="margin:0;font-size:0.7rem;color:#aaaaaa;text-align:center;line-height:1.6;">
-                                                Diese Mail wurde an ${email} gesendet.<br>
-                                                Du erhältst sie weil du zur dripmate Beta eingeladen wurdest.
-                                            </p>
-                                        </td>
-                                    </tr>
-
-                                </table>
-                            </td>
-                        </tr>
-                    </table>
-                </body>
-                </html>
-            `
+            subject: 'Your drip·mate beta access token ☕',
+            html: getEmailTemplate(email, token)
         })
     });
 
@@ -149,45 +110,39 @@ async function sendTokenMail(email, token) {
     }
 }
 
+
 // ── POST /api/auth/register ─────────────────────────
 router.post('/', async (req, res) => {
     const { email } = req.body;
 
     if (!email || !email.includes('@')) {
-        return res.status(400).json({ success: false, error: 'Ungültige E-Mail' });
+        return res.status(400).json({ success: false, error: 'Invalid email address' });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
 
     try {
-        const db  = getDatabase();
+        const db = getDatabase();
         const dbt = getDatabaseType();
 
-        // 1. Whitelist prüfen
         const whitelisted = dbt === 'postgresql'
             ? await db.get('SELECT id FROM whitelist WHERE email = $1', [normalizedEmail])
             : await db.get('SELECT id FROM whitelist WHERE email = ?', [normalizedEmail]);
 
         if (!whitelisted) {
-            return res.status(403).json({
-                success: false,
-                error: 'not_whitelisted'
-            });
+            return res.status(403).json({ success: false, error: 'not_whitelisted' });
         }
 
-        // 2. Bereits registriert?
         const existing = dbt === 'postgresql'
             ? await db.get('SELECT token, used FROM registrations WHERE email = $1', [normalizedEmail])
             : await db.get('SELECT token, used FROM registrations WHERE email = ?', [normalizedEmail]);
 
         if (existing) {
-            // Token nochmal senden (falls verloren gegangen)
             await sendTokenMail(normalizedEmail, existing.token);
-            console.log(`📧 Token erneut gesendet: ${normalizedEmail}`);
+            console.log(`📧 Token re-sent: ${normalizedEmail}`);
             return res.json({ success: true, resent: true });
         }
 
-        // 3. Neuen Token generieren
         let token;
         let attempts = 0;
         do {
@@ -199,25 +154,16 @@ router.post('/', async (req, res) => {
             attempts++;
         } while (attempts < 10);
 
-        // 4. In DB speichern
         if (dbt === 'postgresql') {
-            await db.run(
-                'INSERT INTO registrations (email, token) VALUES ($1, $2)',
-                [normalizedEmail, token]
-            );
+            await db.run('INSERT INTO registrations (email, token) VALUES ($1, $2)', [normalizedEmail, token]);
         } else {
-            await db.run(
-                'INSERT INTO registrations (email, token) VALUES (?, ?)',
-                [normalizedEmail, token]
-            );
+            await db.run('INSERT INTO registrations (email, token) VALUES (?, ?)', [normalizedEmail, token]);
         }
 
-        // 5. Mail versenden
         await sendTokenMail(normalizedEmail, token);
-        console.log(`✅ Token generiert & gesendet: ${normalizedEmail} → ${token}`);
+        console.log(`✅ Token generated & sent: ${normalizedEmail} → ${token}`);
 
         res.json({ success: true, resent: false });
-
     } catch (err) {
         console.error('Register error:', err.message);
         res.status(500).json({ success: false, error: 'Server error' });
