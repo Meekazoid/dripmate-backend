@@ -65,7 +65,9 @@ router.post('/', aiLimiter, authenticateUser, async (req, res) => {
                         },
                         {
                             type: 'text',
-                            text: `Analyze this coffee bag and extract the following information as JSON:
+                            text: `Look at this image. If it is NOT a coffee bag, coffee package, or coffee-related label, respond with exactly: NOT_COFFEE
+
+If it IS a coffee bag or coffee package, analyze it and extract the following information as JSON:
 {
   "name": "coffee name or farm name",
   "origin": "country and region",
@@ -76,7 +78,7 @@ router.post('/', aiLimiter, authenticateUser, async (req, res) => {
   "tastingNotes": "tasting notes"
 }
 
-Only return valid JSON, no other text.`
+Only return valid JSON or NOT_COFFEE, no other text.`
                         }
                     ]
                 }]
@@ -98,7 +100,36 @@ Only return valid JSON, no other text.`
             });
         }
 
+        // Check for NOT_COFFEE response before trying to parse JSON
+        const rawText = data?.content
+            ?.filter(item => item?.type === 'text' && typeof item?.text === 'string')
+            ?.map(item => item.text)
+            ?.join('\n')
+            ?.trim() || '';
+
+        if (rawText.toUpperCase().includes('NOT_COFFEE')) {
+            console.log(`📸 Not a coffee image for user: ${req.user.username}`);
+            return res.status(422).json({
+                success: false,
+                error: 'This doesn\'t appear to be a coffee bag. Please take a photo of a coffee package or label.'
+            });
+        }
+
         const coffeeData = extractCoffeeJsonFromAnthropicResponse(data);
+
+        // Validate that we got meaningful coffee data (not just defaults)
+        const name = (coffeeData?.name || '').toLowerCase().trim();
+        const origin = (coffeeData?.origin || '').toLowerCase().trim();
+        const isGeneric = (!name || name === 'unknown' || name === 'n/a' || name === 'none') &&
+                          (!origin || origin === 'unknown' || origin === 'n/a' || origin === 'none');
+
+        if (isGeneric) {
+            console.log(`📸 Could not extract coffee info for user: ${req.user.username}`);
+            return res.status(422).json({
+                success: false,
+                error: 'Could not recognize coffee details from this image. Try a clearer photo of the label.'
+            });
+        }
 
         // Apply defaults before sanitization
         const withDefaults = buildCoffeeDefaults(coffeeData);
