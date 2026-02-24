@@ -74,10 +74,11 @@ export function cleanAltitude(altitude) {
 /**
  * Validate process method against known values
  * @param {string} process - Process method
- * @returns {string} - Validated process or default 'washed'
+ * @returns {string} - Validated process or default 'unknown'
  */
 export function validateProcess(process) {
     const validProcesses = [
+        'unknown',
         'washed',
         'natural',
         'honey',
@@ -93,7 +94,7 @@ export function validateProcess(process) {
         'extended fermentation'
     ];
     
-    if (!process || typeof process !== 'string') return 'washed';
+    if (!process || typeof process !== 'string') return 'unknown';
     
     const cleaned = stripHTML(process).toLowerCase().trim();
     
@@ -109,7 +110,7 @@ export function validateProcess(process) {
         }
     }
     
-    return 'washed';
+    return 'unknown';
 }
 
 /**
