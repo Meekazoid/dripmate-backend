@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="dripmate - Precision meets Ritual. Your specialty coffee brewing assistant.">
+    <meta name="theme-color" content="#000000">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="logo-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="logo-512.png">
+    <link rel="apple-touch-icon" href="logo-192.png">
+    <link rel="shortcut icon" href="logo-192.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@200;300;400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <title>drip·mate</title>
+
+</head>
+<body>
+    <div class="container">
+        <!-- ====== HEADER ====== -->
+        <header>
+            <div class="logo-title-group">
+                <div class="logo-swap">
+                    <img class="header-logo logo-dark" id="header-logo-dark" src="logo_hell_dark.svg" alt="drip·mate Logo">
+                    <img class="header-logo logo-light" id="header-logo-light" src="logo_dunkel_light.svg" alt="drip·mate Logo">
+                </div>
+                
+                <div class="brand-text-group">
+                    <h1 id="brand-title"><span class="brand-word">d r i p</span><span class="brand-dot">·</span><span class="brand-word">m a t e</span></h1>
+                    <div class="header-subtitle" id="brand-subtitle">Precision meets Ritual.</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- ====== ADD COFFEE SECTION ====== -->
+        <div class="add-section">
+            <div class="camera-section active">
+                <input type="file" id="imageInput" accept="image/*" capture="environment" style="display: none;">
+                <input type="file" id="uploadInput" accept="image/*" style="display: none;">
+                
+                <button class="cs-btn" id="cameraBtn" aria-label="Coffee Shot">
+                    <span class="cs-content">
+                        <span class="cs-icon-wrap">
+                            <!-- Coffee Bag + Viewfinder (Variante E) -->
+                            <svg class="cs-viewfinder" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <filter id="invert-white">
+                                    <feColorMatrix type="matrix"
+                                        values="-1 0 0 0 1
+                                                0 -1 0 0 1
+                                                0 0 -1 0 1
+                                                0 0 0 1 0"/>
+                                </filter>
+                                <image href="data:image/png;base64,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"
+                                    x="8" y="4" width="32" height="40"
+                                    filter="url(#invert-white)"
+                                    opacity="0.88"/>
+                                <g stroke="rgba(255,255,255,0.9)" stroke-width="1.2" stroke-linecap="round" fill="none">
+                                    <path d="M2 10 V4 Q2 2 4 2"/>
+                                    <path d="M4 2 H10"/>
+                                    <path d="M38 2 H44 Q46 2 46 4"/>
+                                    <path d="M46 4 V10"/>
+                                    <path d="M2 38 V44 Q2 46 4 46"/>
+                                    <path d="M4 46 H10"/>
+                                    <path d="M38 46 H44 Q46 46 46 44"/>
+                                    <path d="M46 44 V38"/>
+                                </g>
+                            </svg>
+                        </span>
+                        <span class="cs-text">
+                            <span class="cs-label">Coffee Shot</span>
+                            <span class="cs-sub">scan bag · AI analysis</span>
+                        </span>
+                        <svg class="cs-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                            <path d="M9 6l6 6-6 6"/>
+                        </svg>
+                    </span>
+                </button>
+                
+                <div class="button-group action-buttons">
+                    <button class="upload-button btn" id="uploadBtn">
+                        <svg class="button-icon" viewBox="0 0 24 24">
+                            <path d="M4 4h16v16H4z"></path>
+                            <path d="M7 4v5h10V4"></path>
+                            <rect x="8" y="13" width="8" height="5" rx="0.8"></rect>
+                        </svg>
+                        Upload Image
+                    </button>
+                    <button class="manual-button btn" id="manualBtn">
+                        <svg class="button-icon" viewBox="0 0 24 24">
+                            <path d="M4 20l4.8-1.2L19 8.6a2 2 0 0 0 0-2.8l-.8-.8a2 2 0 0 0-2.8 0L5.2 15.2 4 20z"></path>
+                            <path d="M13.7 6.7l3.6 3.6"></path>
+                        </svg>
+                        Manual
+                    </button>
+                </div>
+                
+                <img id="imagePreview" alt="Preview" style="display: none; margin-top: 16px; width: 100%; border-radius: 12px;">
+                <div id="loadingMessage" class="loading hidden">
+                    <div class="spinner"></div>
+                    <p class="loading-text">Analyzing coffee...</p>
+                </div>
+                <div id="errorMessage" class="error-message hidden"></div>
+                <div id="successMessage" class="success-message hidden"></div>
+            </div>
+
+            <!-- Manual Entry Form -->
+            <div class="manual-section hidden">
+                <div class="form-group">
+                    <label>Name / Farm</label>
+                    <input type="text" id="coffeeName" placeholder="e.g. Finca Milán">
+                </div>
+                <div class="form-group">
+                    <label>Origin</label>
+                    <input type="text" id="origin" placeholder="e.g. Colombia, Calarcá">
+                </div>
+                <div class="form-group">
+                    <label>Processing Method</label>
+                    <button type="button" class="brew-chip process-chip" id="process-chip" aria-label="Choose processing method">
+                        <span class="brew-chip-label" id="process-chip-label">– optional –</span>
+                        <svg class="brew-chip-caret" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>
+                    </button>
+                    <input type="hidden" id="process" value="">
+                </div>
+                <div class="form-group">
+                    <label>Variety</label>
+                    <input type="text" id="cultivar" placeholder="e.g. Caturra">
+                </div>
+                <div class="form-group">
+                    <label>Altitude (masl)</label>
+                    <input type="text" id="altitude" placeholder="e.g. 1650">
+                </div>
+                <div class="form-group">
+                    <label>Roaster</label>
+                    <input type="text" id="roaster" placeholder="Optional">
+                </div>
+                <div class="form-group">
+                    <label>Tasting Notes</label>
+                    <textarea id="tastingNotes" placeholder="e.g. Watermelon, Lemonade"></textarea>
+                </div>
+                <button id="saveManualBtn">✓ Save</button>
+            </div>
+        </div>
+
+        <!-- ====== BREW SETUP — STICKY SELECTOR (V5.2) ====== -->
+        <div class="global-grinder-selector">
+            <div class="brew-chip-row">
+                <div class="brew-chip-group">
+                    <button class="brew-chip" id="grinder-chip" aria-label="Choose grinder">
+                        <span class="brew-chip-inner">
+                            <span class="brew-chip-group-label">Grinder</span>
+                            <span class="brew-chip-label" id="grinder-chip-label">Fellow Ode Gen 2</span>
+                        </span>
+                        <svg class="brew-chip-caret" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>
+                    </button>
+                </div>
+                <div class="brew-chip-group">
+                    <button class="brew-chip" id="method-chip" aria-label="Choose method">
+                        <span class="brew-chip-inner">
+                            <span class="brew-chip-group-label">Brew Method</span>
+                            <span class="brew-chip-label" id="method-chip-label">V60</span>
+                        </span>
+                        <svg class="brew-chip-caret" viewBox="0 0 10 6"><path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- ====== COFFEE LIST ====== -->
+        <div id="coffeeList" class="coffee-list"></div>
+        
+        <div id="emptyState" class="empty-state">
+            <div class="onboarding-card">
+                <div class="onboarding-icon">
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 8h1a4 4 0 1 1 0 8h-1"></path>
+                        <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V8z"></path>
+                        <line x1="6" y1="2" x2="6" y2="4"></line>
+                        <line x1="10" y1="2" x2="10" y2="4"></line>
+                        <line x1="14" y1="2" x2="14" y2="4"></line>
+                    </svg>
+                </div>
+                <p class="onboarding-text">
+                    First, take a picture of your coffee or add it manually. Then, choose your grinder. Open your brew-card to explore settings and use the integrated timer.<span class="onboarding-enjoy">Enjoy!</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== FIXED CONTROLS ====== -->
+    <div class="fixed-controls">
+        <div class="control-btn" id="themeToggleBtn">
+            <svg class="control-icon" viewBox="0 0 24 24">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+        </div>
+        <div class="control-btn" id="trashBinBtn">
+            <svg class="control-icon" viewBox="0 0 24 24" stroke-width="1.8">
+                <path d="M6.5 13h11l-1.8 7H8.3L6.5 13z"></path>
+                <line x1="5.5" y1="13" x2="18.5" y2="13"></line>
+                <line x1="12" y1="13" x2="12" y2="8"></line>
+                <path d="M12 11.5 C9.5 11.5 7 10 7 6.5 C9 6.5 11.5 8 12 11.5z"></path>
+                <path d="M12 9 C14.5 9 17 7.5 17 4 C15 4 12.5 6.5 12 9z"></path>
+            </svg>
+        </div>
+        <div class="control-btn" id="waterControlBtn">
+            <svg class="control-icon" viewBox="0 0 24 24">
+                <path d="M12 2.6c0 0-6.4 7.2-6.4 11.9a6.4 6.4 0 0 0 12.8 0C18.4 9.8 12 2.6 12 2.6z"></path>
+                <path d="M9.1 14.3c0 1.7 1.2 3 2.9 3.4" opacity="0.45"></path>
+            </svg>
+        </div>
+        <div class="control-btn" id="settingsBtnControl">
+            <svg class="control-icon" viewBox="0 0 24 24">
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+        </div>
+    </div>
+
+    <!-- ====== SETTINGS MODAL ====== -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <!-- Header (closed before content) -->
+            <div class="popup-header-standard" id="settings-popup">
+                <div class="popup-title-group">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    <h2>Settings</h2>
+                </div>
+                <button class="close-btn" id="closeSettingsBtn">✕</button>
+            </div>
+            <!-- Info box -->
+            <div class="info-box-standard">
+                <strong>Device Activation</strong>
+                <p id="activationSubtitle">Enter the code you received to activate this device.</p>
+            </div>
+            <!-- Content -->
+            <div id="activationInputWrap" class="form-group">
+                <input type="text" id="accessCodeInput" placeholder="Insert Token">
+            </div>
+            <div id="activationStatus" class="activation-status" style="display: none;"></div>
+            <button id="activateDeviceBtn">Activate Device</button>
+
+            <!-- Divider -->
+            <hr class="settings-divider">
+
+            <!-- Legal Section -->
+            <div class="settings-legal">
+                <button class="settings-legal-btn" id="openImpressumBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    Impressum
+                </button>
+                <button class="settings-legal-btn" id="openDatenschutzBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                    Datenschutz
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== IMPRESSUM MODAL ====== -->
+    <div id="impressumModal" class="modal">
+        <div class="modal-content">
+            <div class="popup-header-standard">
+                <div class="popup-title-group">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    <h2>Impressum</h2>
+                </div>
+                <button class="close-btn" id="closeImpressumBtn">✕</button>
+            </div>
+            <div class="legal-content">
+                <p><strong>Angaben gemäß § 5 TMG</strong></p>
+                <p>
+                    [Vorname Nachname / Firmenname]<br>
+                    [Straße Hausnummer]<br>
+                    [PLZ Ort]<br>
+                    Deutschland
+                </p>
+                <p><strong>Kontakt</strong></p>
+                <p>
+                    E-Mail: [<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="37525a565e5b77524f565a475b521954585a">[email&#160;protected]</a>]<br>
+                    Telefon: [+49 ...]
+                </p>
+                <p><strong>Verantwortlich für den Inhalt</strong></p>
+                <p>[Vorname Nachname], [Adresse wie oben]</p>
+                <p class="legal-note">Bitte ersetze die Platzhalter in eckigen Klammern mit deinen tatsächlichen Angaben vor dem Release.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== DATENSCHUTZ MODAL ====== -->
+    <div id="datenschutzModal" class="modal">
+        <div class="modal-content">
+            <div class="popup-header-standard">
+                <div class="popup-title-group">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                    <h2>Datenschutz</h2>
+                </div>
+                <button class="close-btn" id="closeDatenschutzBtn">✕</button>
+            </div>
+            <div class="legal-content">
+                <p><strong>Datenschutzerklärung</strong></p>
+                <p>Diese App erhebt und verarbeitet personenbezogene Daten ausschließlich im Rahmen der geltenden Datenschutzgesetze, insbesondere der DSGVO (EU) 2016/679.</p>
+
+                <p><strong>Verantwortlicher</strong></p>
+                <p>[Vorname Nachname / Firmenname], [Adresse], [E-Mail]</p>
+
+                <p><strong>Erhobene Daten</strong></p>
+                <p>Die App speichert Einstellungen und Präferenzen ausschließlich lokal auf deinem Gerät (localStorage). Es werden keine personenbezogenen Daten an Dritte übermittelt oder auf externen Servern gespeichert.</p>
+
+                <p><strong>Aktivierungscode</strong></p>
+                <p>Der bei der Geräteaktivierung eingegebene Code wird zur Verifikation übermittelt und danach nicht dauerhaft gespeichert.</p>
+
+                <p><strong>Deine Rechte (Art. 15–22 DSGVO)</strong></p>
+                <p>Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung sowie Datenübertragbarkeit. Wende dich dazu an: [<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="3e5b535f57527e5b465f534e525b105d5153">[email&#160;protected]</a>]</p>
+
+                <p><strong>Beschwerderecht</strong></p>
+                <p>Du hast das Recht, dich bei der zuständigen Datenschutzbehörde zu beschweren.</p>
+
+                <p class="legal-note">Stand: [Monat Jahr] · Bitte Platzhalter vor dem Release ersetzen.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== WATER HARDNESS MODAL ====== -->
+    <div id="waterModal" class="modal">
+        <div class="modal-content modal-content--narrow water-modal-content">
+            <div class="popup-header-standard">
+                <div class="popup-title-group">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 2.6c0 0-6.4 7.2-6.4 11.9a6.4 6.4 0 0 0 12.8 0C18.4 9.8 12 2.6 12 2.6z"></path>
+                        <path d="M9.1 14.3c0 1.7 1.2 3 2.9 3.4" opacity="0.45"></path>
+                    </svg>
+                    <h2>Water Hardness</h2>
+                </div>
+                <button class="close-btn" id="closeWaterBtn">✕</button>
+            </div>
+
+            <div id="waterHardnessDisplay" class="water-result-box" style="display: none;">
+                <div class="water-result-center">
+                    <div class="water-result-value" id="hardnessValueDisplay">-</div>
+                    <div class="water-result-category" id="hardnessCategoryDisplay">-</div>
+                    <div class="water-result-source" id="hardnessSourceDisplay">-</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>ZIP Code</label>
+                <div class="input-btn-row">
+                    <input type="text" id="zipCodeInput" placeholder="Enter 5 digits (e.g. 10115)" maxlength="5" pattern="[0-9]{5}">
+                    <button id="saveWaterBtn" class="inline-save-btn">Use ZIP</button>
+                </div>
+            </div>
+
+            <div class="form-group form-group--mt">
+                <label>Manual override (°dH)</label>
+                <div class="input-btn-row">
+                    <input type="number" id="manualHardnessInput" placeholder="e.g. 16 (medium)" min="0" max="50" step="0.1">
+                    <button id="saveManualHardnessBtn" class="inline-save-btn">Use Manual</button>
+                </div>
+                <p class="form-helper">Manual value has priority.</p>
+            </div>
+
+            <div class="info-box-standard water-impact-info" id="waterBrewImpact" style="display: none;">
+                <strong>Brew Impact</strong>
+                <p id="brewImpactText"></p>
+            </div>
+
+            <div class="water-scale-minimal" aria-label="Water hardness scale">
+                <span>0–7 Very soft</span>
+                <span>7–14 Soft</span>
+                <span>14–21 Medium</span>
+                <span>21–28 Hard</span>
+                <span>28+ Very hard</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== GRINDER PICKER MODAL ====== -->
+    <div id="grinderModal" class="modal">
+        <div class="modal-content modal-content--narrow">
+            <div class="popup-header-standard">
+                <div class="popup-title-group">
+                    <svg viewBox="0 0 24 24">
+                        <rect x="7" y="3" width="10" height="7" rx="2"></rect>
+                        <path d="M8.5 10v3.5M15.5 10v3.5"></path>
+                        <rect x="6" y="13.5" width="12" height="7.5" rx="2"></rect>
+                        <path d="M10 17h4"></path>
+                    </svg>
+                    <h2>Grinder</h2>
+                </div>
+                <button class="close-btn" id="closeGrinderBtn">✕</button>
+            </div>
+            <div class="picker-list" id="grinder-picker-list">
+                <button class="picker-option" data-value="1zpresso">
+                    <span class="picker-option-name">1Zpresso JX</span>
+                    <span class="picker-option-detail">48mm conical · 30 clicks/rot</span>
+                    <span class="picker-check">✓</span>
+                </button>
+                <button class="picker-option" data-value="baratza">
+                    <span class="picker-option-name">Baratza Encore</span>
+                    <span class="picker-option-detail">40mm conical · 40 steps</span>
+                    <span class="picker-check">✓</span>
+                </button>
+                <button class="picker-option" data-value="comandante_mk3">
+                    <span class="picker-option-name">Comandante C40 MK3</span>
+                    <span class="picker-option-detail">Nitro Blade · Red Clix</span>
+                    <span class="picker-check">✓</span>
+                </button>
+                <button class="picker-option" data-value="comandante_mk4">
+                    <span class="picker-option-name">Comandante C40 MK4</span>
+                    <span class="picker-option-detail">Nitro Blade · 40 clicks</span>
+                    <span class="picker-check">✓</span>
+                </button>
+                <button class="picker-option" data-value="fellow_gen1">
+                    <span class="picker-option-name">Fellow Ode Gen 1</span>
+                    <span class="picker-option-detail">Original burrs · 64mm flat</span>
+                    <span class="picker-check">✓</span>
+                </button>
+                <button class="picker-option" data-value="fellow_gen2">
+                    <span class="picker-option-name">Fellow Ode Gen 2</span>
+                    <span class="picker-option-detail">SSP MP burrs · 64mm flat</span>
+                    <span class="picker-check">✓</span>
+                </button>
+                <button class="picker-option" data-value="timemore_c2">
+                    <span class="picker-option-name">Timemore Chestnut C2</span>
+                    <span class="picker-option-detail">38mm conical · 80µm/click</span>
+                    <span class="picker-check">✓</span>
+                </button>
+                <button class="picker-option" data-value="timemore_s3">
+                    <span class="picker-option-name">Timemore Chestnut S3</span>
+                    <span class="picker-option-detail">S2C890 · 42mm conical · 15µm/click</span>
+                    <span class="picker-check">✓</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== METHOD PICKER MODAL ====== -->
+    <div id="methodModal" class="modal">
+        <div class="modal-content modal-content--narrow">
+            <div class="popup-header-standard">
+                <div class="popup-title-group">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M17 8h1a4 4 0 1 1 0 8h-1"></path>
+                        <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V8z"></path>
+                    </svg>
+                    <h2>Brew Method</h2>
+                </div>
+                <button class="close-btn" id="closeMethodBtn">✕</button>
+            </div>
+            <div class="picker-list" id="method-picker-list">
+                <button class="picker-option" data-value="aeropress">
+                    <span class="picker-option-name">AeroPress</span>
+                    <span class="picker-option-detail">Immersion · inverted · 1:15</span>
+                    <span class="picker-check">✓</span>
+                </button>
+                <button class="picker-option" data-value="chemex">
+                    <span class="picker-option-name">Chemex</span>
+                    <span class="picker-option-detail">Pour-over · thick filter · 1:16.5</span>
+                    <span class="picker-check">✓</span>
+                </button>
+                <button class="picker-option" data-value="v60">
+                    <span class="picker-option-name">Hario V60</span>
+                    <span class="picker-option-detail">Pour-over · cone · 1:16</span>
+                    <span class="picker-check">✓</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== PROCESS PICKER MODAL ====== -->
+    <div id="processModal" class="modal">
+        <div class="modal-content modal-content--narrow">
+            <div class="popup-header-standard">
+                <div class="popup-title-group">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                        <path d="M8 12l3 3 5-6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <h2>Processing Method</h2>
+                </div>
+                <button class="close-btn" id="closeProcessBtn">✕</button>
+            </div>
+            <div class="picker-list" id="process-picker-list">
+                <button class="picker-option" data-value="">
+                    <span class="picker-option-name">Unknown / Skip</span>
+                    <span class="picker-option-detail">Use balanced defaults</span>
+                    <span class="picker-check">✓</span>
+                </button>
+                <button class="picker-option" data-value="washed">
+                    <span class="picker-option-name">Washed</span>
+                    <span class="picker-option-detail">Clean · bright · standard</span>
+                    <span class="picker-check">✓</span>
+                </button>
+                <button class="picker-option" data-value="natural">
+                    <span class="picker-option-name">Natural</span>
+                    <span class="picker-option-detail">Full fruit body · coarser grind</span>
+                    <span class="picker-check">✓</span>
+                </button>
+                <button class="picker-option" data-value="honey">
+                    <span class="picker-option-name">Honey</span>
+                    <span class="picker-option-detail">Sweet · fruity · balanced</span>
+                    <span class="picker-check">✓</span>
+                </button>
+                <button class="picker-option" data-value="anaerobic natural">
+                    <span class="picker-option-name">Anaerobic Natural</span>
+                    <span class="picker-option-detail">Funky · fruity · controlled</span>
+                    <span class="picker-check">✓</span>
+                </button>
+                <button class="picker-option" data-value="anaerobic washed">
+                    <span class="picker-option-name">Anaerobic Washed</span>
+                    <span class="picker-option-detail">Clean but complex · cooler temp</span>
+                    <span class="picker-check">✓</span>
+                </button>
+                <button class="picker-option" data-value="carbonic maceration">
+                    <span class="picker-option-name">Carbonic Maceration</span>
+                    <span class="picker-option-detail">Wine-like · slow extraction</span>
+                    <span class="picker-check">✓</span>
+                </button>
+                <button class="picker-option" data-value="yeast inoculated natural">
+                    <span class="picker-option-name">Yeast Inoculated Natural</span>
+                    <span class="picker-option-detail">Unique fermentation notes</span>
+                    <span class="picker-check">✓</span>
+                </button>
+                <button class="picker-option" data-value="nitro washed">
+                    <span class="picker-option-name">Nitro Washed</span>
+                    <span class="picker-option-detail">Very delicate · volatile compounds</span>
+                    <span class="picker-check">✓</span>
+                </button>
+                <button class="picker-option" data-value="extended fermentation">
+                    <span class="picker-option-name">Extended Fermentation</span>
+                    <span class="picker-option-detail">Intense flavors · careful extraction</span>
+                    <span class="picker-check">✓</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== COMPOST MODAL ====== -->
+    <div id="decafModal" class="modal">
+        <div class="modal-content modal-content--narrow">
+            <!-- Header (closed before content) -->
+            <div class="popup-header-standard" id="compost-popup">
+                <div class="popup-title-group">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M6.5 13h11l-1.8 7H8.3L6.5 13z"></path>
+                        <line x1="5.5" y1="13" x2="18.5" y2="13"></line>
+                        <line x1="12" y1="13" x2="12" y2="8"></line>
+                        <path d="M12 11.5 C9.5 11.5 7 10 7 6.5 C9 6.5 11.5 8 12 11.5z"></path>
+                        <path d="M12 9 C14.5 9 17 7.5 17 4 C15 4 12.5 6.5 12 9z"></path>
+                    </svg>
+                    <h2>Compost</h2>
+                </div>
+                <button class="close-btn" id="closeDecafBtn">✕</button>
+            </div>
+            <!-- Info box -->
+            <div class="info-box-standard">
+                <strong>Archive</strong>
+                <p>Deleted &amp; archived coffees</p>
+            </div>
+            <!-- Content -->
+            <div id="decafList" class="decaf-list"></div>
+            <div id="decafEmpty" class="decaf-empty" style="display: none;">
+                <div class="compost-empty-icon">
+                    <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" class="compost-empty-svg">
+                        <path d="M6.5 13h11l-1.8 7H8.3L6.5 13z"/>
+                        <line x1="5.5" y1="13" x2="18.5" y2="13"/>
+                        <line x1="12" y1="13" x2="12" y2="8"/>
+                        <path d="M12 11.5 C9.5 11.5 7 10 7 6.5 C9 6.5 11.5 8 12 11.5z"/>
+                        <path d="M12 9 C14.5 9 17 7.5 17 4 C15 4 12.5 6.5 12 9z"/>
+                    </svg>
+                </div>
+                <p class="compost-empty-title">Compost is empty</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== MOVE TO COMPOST CONFIRMATION MODAL ====== -->
+    <div id="compostConfirmModal" class="modal">
+        <div class="modal-content modal-content--narrow compost-confirm-modal-content">
+            <div class="popup-header-standard">
+                <div class="popup-title-group">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M6.5 13h11l-1.8 7H8.3L6.5 13z"></path>
+                        <line x1="5.5" y1="13" x2="18.5" y2="13"></line>
+                        <line x1="12" y1="13" x2="12" y2="8"></line>
+                        <path d="M12 11.5 C9.5 11.5 7 10 7 6.5 C9 6.5 11.5 8 12 11.5z"></path>
+                        <path d="M12 9 C14.5 9 17 7.5 17 4 C15 4 12.5 6.5 12 9z"></path>
+                    </svg>
+                    <h2>Move to Compost?</h2>
+                </div>
+                <button class="close-btn" id="closeCompostConfirmBtn">✕</button>
+            </div>
+            <div class="info-box-standard">
+                <strong>Archive coffee</strong>
+                <p>Coffee can be stored here with all adjustments made, and restored anytime.</p>
+            </div>
+            <div class="compost-confirm-actions">
+                <button id="cancelCompostConfirmBtn" class="compost-confirm-btn-secondary">Cancel</button>
+                <button id="confirmCompostConfirmBtn">Okay</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== PERMANENT DELETE CONFIRMATION MODAL ====== -->
+    <div id="compostDeleteConfirmModal" class="modal">
+        <div class="modal-content modal-content--narrow compost-confirm-modal-content">
+            <div class="popup-header-standard">
+                <div class="popup-title-group">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M6.5 13h11l-1.8 7H8.3L6.5 13z"></path>
+                        <line x1="5.5" y1="13" x2="18.5" y2="13"></line>
+                        <line x1="9" y1="10" x2="15" y2="10"></line>
+                        <line x1="10" y1="6" x2="14" y2="6"></line>
+                    </svg>
+                    <h2>Delete Coffee?</h2>
+                </div>
+                <button class="close-btn" id="closeCompostDeleteConfirmBtn">✕</button>
+            </div>
+            <div class="info-box-standard">
+                <strong>Permanently delete this coffee?</strong>
+                <p>This cannot be undone.</p>
+            </div>
+            <div class="compost-confirm-actions">
+                <button id="cancelCompostDeleteConfirmBtn" class="compost-confirm-btn-secondary">Cancel</button>
+                <button id="confirmCompostDeleteConfirmBtn">Okay</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== RESET ADJUSTMENTS CONFIRMATION MODAL ====== -->
+    <div id="resetAdjustmentsConfirmModal" class="modal">
+        <div class="modal-content modal-content--narrow compost-confirm-modal-content">
+            <div class="popup-header-standard">
+                <div class="popup-title-group">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
+                        <polyline points="21 3 21 9 15 9"></polyline>
+                    </svg>
+                    <h2>Reset this coffee's tuning?</h2>
+                </div>
+                <button class="close-btn" id="closeResetAdjustmentsConfirmBtn">✕</button>
+            </div>
+            <div class="info-box-standard">
+                <strong>Return to recommendations</strong>
+                <p>This clears manual tweaks and restores the coffee to its initial recommended values.</p>
+            </div>
+            <div class="compost-confirm-actions">
+                <button id="cancelResetAdjustmentsConfirmBtn" class="compost-confirm-btn-secondary">Cancel</button>
+                <button id="confirmResetAdjustmentsConfirmBtn">Okay</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== FEEDBACK HISTORY MODAL ====== -->
+    <div id="feedbackHistoryModal" class="modal">
+        <div class="modal-content modal-content--narrow">
+            <div class="popup-header-standard">
+                <div class="popup-title-group">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 8v5l3 2"></path>
+                        <circle cx="12" cy="12" r="9"></circle>
+                    </svg>
+                    <h2 id="feedbackHistoryTitle">Adjustment History</h2>
+                </div>
+                <button class="close-btn" id="closeFeedbackHistoryBtn">✕</button>
+            </div>
+            <div class="info-box-standard">
+                <strong>Timeline</strong>
+                <p>Track applied grind and temperature changes per coffee.</p>
+            </div>
+            <div id="feedbackHistoryList" class="history-list"></div>
+            <div id="feedbackHistoryEmpty" class="decaf-empty" style="display: none;">
+                No adjustments applied yet.
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== SCRIPTS ====== -->
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script src="js/data/water-hardness-db.js"></script>
+
+    <!-- Brew timer stubs: ensure functions exist on window before module loads -->
+    <script>
+        function startBrewTimer(index) {
+            if (window._startBrewTimer) return window._startBrewTimer(index);
+            console.error('startBrewTimer not yet loaded');
+        }
+        function pauseBrewTimer(index) {
+            if (window._pauseBrewTimer) return window._pauseBrewTimer(index);
+        }
+        function resetBrewTimer(index) {
+            if (window._resetBrewTimer) return window._resetBrewTimer(index);
+        }
+    </script>
+
+    <script type="module" src="js/app.js"></script>
+    <script src="js/services/backend-sync.js"></script>
+    
+    <!-- Service Worker Registration for Offline PWA Support -->
+    <script>
+      // Register Service Worker for offline PWA support
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+              console.log('✅ Service Worker registered:', registration.scope);
+              
+              // Check for updates
+              registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'activated') {
+                    console.log('🔄 New Service Worker activated — refresh for updates');
+                  }
+                });
+              });
+            })
+            .catch(error => {
+              console.warn('⚠️ Service Worker registration failed:', error);
+            });
+        });
+      }
+    </script>
+    <script>
+      // Match logo height to combined height of title + subtitle
+      function alignHeader() {
+        const logoDark  = document.getElementById('header-logo-dark');
+        const logoLight = document.getElementById('header-logo-light');
+        const title     = document.getElementById('brand-title');
+        const subtitle  = document.getElementById('brand-subtitle');
+        if (!title || !subtitle) return;
+
+        const gap    = parseInt(getComputedStyle(subtitle).marginTop) || 2;
+        const totalH = title.offsetHeight + subtitle.offsetHeight + gap;
+
+        // Apply height to both

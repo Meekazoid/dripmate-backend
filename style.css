@@ -1,0 +1,2936 @@
+/* ==========================================
+   DRIPMATE - STYLE.CSS
+   Extracted & cleaned from index.html
+   ========================================== */
+
+/* ==========================================
+   1. RESET & BASE
+   ========================================== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+html {
+    overflow-x: hidden;
+    overflow-y: auto;
+    width: 100%;
+    scroll-behavior: smooth;
+}
+
+body {
+    overflow-x: hidden;
+    overflow-y: auto;
+    width: 100%;
+}
+
+/* ==========================================
+   2. CSS VARIABLES (THEMES)
+   ========================================== */
+
+:root {
+    --bg-primary: #000000;
+    --bg-secondary: #1a1a1a;
+    --bg-card: #0a0a0a;
+    --text-primary: #ffffff;
+    --text-secondary: #a0a0a0;
+    --accent: #d4a574;
+    --accent-hover: #c09563;
+    --border: #2a2a2a;
+    --shadow: rgba(0, 0, 0, 0.5);
+}
+
+body.light-mode {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f8f8;
+    --bg-card: #ffffff;
+    --text-primary: #000000;
+    --text-secondary: #666666;
+    --accent: #8b6f47;
+    --accent-hover: #7a5f3d;
+    --border: #e0e0e0;
+    --shadow: rgba(0, 0, 0, 0.1);
+}
+
+/* ==========================================
+   3. BODY & LAYOUT
+   ========================================== */
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Segoe UI', sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 40px 20px 100px;
+    transition: background-color 0.3s ease;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ==========================================
+   4. HEADER & LOGO
+   ========================================== */
+
+header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    margin-bottom: 48px;
+    padding: 0;
+}
+
+.logo-title-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    width: 100%;
+}
+
+.brand-text-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.header-logo {
+    height: 68px;
+    width: auto;
+    display: block;
+    flex-shrink: 0;
+    transform: none;
+    filter: none !important; 
+    -webkit-filter: none !important;
+}
+
+body.light-mode .header-logo {
+    filter: none !important;
+}
+
+/* ─── Logo dark/light swap ─── */
+.logo-swap {
+    position: relative;
+    flex-shrink: 0;
+}
+
+/* Default (dark mode): show the light/bright logo */
+.logo-dark  { display: block; }
+.logo-light { display: none;  }
+
+/* Light mode: swap to the dark logo */
+body.light-mode .logo-dark  { display: none;  }
+body.light-mode .logo-light { display: block; }
+
+h1 {
+    font-family: 'Sora', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 200;
+    letter-spacing: 0.32em;
+    text-transform: lowercase;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+}
+
+.brand-dot {
+    color: var(--accent);
+    /* margin simuliert exakt ein Leerzeichen in der Sora-Schriftart */
+    margin: 0 0.25em !important; 
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
+    transform: translateY(-0.05em); /* Optische Zentrierung auf der Buchstabenachse */
+}
+
+#brand-title {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 0 !important;
+}
+
+.brand-word {
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.header-subtitle {
+    font-family: 'Sora', sans-serif;
+    font-size: 0.62rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 300;
+    margin-top: 2px;
+    align-self: center;
+    opacity: 0.7;
+}
+
+/* ==========================================
+   5. ADD COFFEE SECTION & BUTTONS
+   ========================================== */
+
+.add-section {
+    background: color-mix(in srgb, var(--bg-secondary) 88%, #000 12%);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 40px;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 12px;
+}
+
+/* ─── Coffee Shot Signature Button (B2 — Accent Stripe) ─── */
+.cs-btn {
+    position: relative;
+    display: flex;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    border-radius: 14px;
+    overflow: hidden;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: 0 4px 20px rgba(139, 90, 43, 0.2), 0 1px 4px rgba(0,0,0,0.3);
+}
+
+.cs-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 24px rgba(139, 90, 43, 0.28), 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.cs-btn:active {
+    transform: scale(0.98);
+    box-shadow: 0 2px 8px rgba(139, 90, 43, 0.18), 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.cs-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.cs-content {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    width: 100%;
+    background: linear-gradient(135deg, #5c3a1e 0%, #3d2410 55%, #2e1a0c 100%);
+    border: 1px solid rgba(180, 120, 60, 0.25);
+    border-left: 3px solid var(--accent);
+    border-radius: 14px;
+}
+
+body.light-mode .cs-content {
+    background: linear-gradient(135deg, #7a4a22 0%, #5c3318 55%, #4a2810 100%);
+    border-color: rgba(200, 140, 70, 0.3);
+    border-left: 3px solid var(--accent);
+}
+
+body.light-mode .add-section {
+    background: var(--bg-secondary);
+}
+
+.cs-icon-wrap {
+    flex-shrink: 0;
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cs-viewfinder {
+    width: 42px;
+    height: 42px;
+}
+
+.cs-text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.cs-label {
+    font-size: 0.82rem;
+    font-weight: 300;
+    color: #ffffff;
+    letter-spacing: 0.04em;
+    line-height: 1.1;
+}
+
+.cs-sub {
+    font-size: 0.6rem;
+    color: rgba(255, 255, 255, 0.38);
+    letter-spacing: 0.03em;
+    line-height: 1;
+    font-weight: 200;
+}
+
+/* ─── Coffee Shot Chevron Arrow ─── */
+.cs-arrow {
+    margin-left: auto;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    color: var(--accent);
+    opacity: 0.45;
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+.cs-btn:hover .cs-arrow {
+    opacity: 0.7;
+    transform: translateX(2px);
+}
+
+/* ─── Upload & Manual Buttons (Unified Flat Cards) ─── */
+.upload-button,
+.manual-button {
+    width: auto;
+    padding: 12px 16px;
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    font-family: 'Sora', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 300;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    transition: border-color 0.2s ease;
+    white-space: nowrap;
+    box-shadow: none;
+}
+
+body.light-mode .upload-button,
+body.light-mode .manual-button {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    box-shadow: none;
+}
+
+.upload-button:hover,
+.manual-button:hover {
+    border-color: rgba(212, 165, 116, 0.35);
+    color: var(--text-primary);
+    transform: none;
+    box-shadow: none;
+}
+
+body.light-mode .upload-button:hover,
+body.light-mode .manual-button:hover {
+    border-color: rgba(139, 111, 71, 0.35);
+    box-shadow: none;
+}
+
+.upload-button:disabled,
+.manual-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.button-icon {
+    width: 14px;
+    height: 14px;
+    stroke: var(--accent);
+    stroke-width: 1.4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+    flex-shrink: 0;
+    opacity: 0.6;
+}
+
+.action-buttons .btn svg {
+    width: 14px !important;
+    height: 14px !important;
+    min-width: 14px !important;
+    min-height: 14px !important;
+    stroke: var(--accent) !important;
+    stroke-width: 1.4 !important;
+    fill: none !important;
+    opacity: 0.6;
+    margin: 0 !important;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+/* ==========================================
+   6. MANUAL ENTRY FORM
+   ========================================== */
+
+.manual-section {
+    margin-top: 30px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+input:not([type="range"]), select, textarea {
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+input[type="range"] {
+    padding: 0;
+    background: none;
+    border: none;
+    border-radius: 0;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+button {
+    padding: 14px 24px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+button:hover {
+    background: var(--accent-hover);
+}
+
+/* ==========================================
+   7. GLOBAL BREW SETUP — CHIPS + PICKER MODALS
+   ========================================== */
+
+.global-grinder-selector {
+    position: sticky;
+    top: 20px;
+    z-index: 100;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 12px 20px;
+    margin-bottom: 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    box-shadow: 0 4px 12px var(--shadow);
+    transition: all 0.3s ease;
+}
+
+.global-grinder-selector:hover {
+    box-shadow: 0 6px 16px var(--shadow);
+}
+
+/* ── Chip Row ── */
+.brew-chip-row {
+    display: flex;
+    gap: 14px;
+    width: 100%;
+    max-width: 540px;
+    justify-content: center;
+}
+
+/* ── Chip Group (smart card) ── */
+.brew-chip-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    min-width: 0;
+}
+
+.brew-chip-group-label {
+    font-family: 'Sora', sans-serif;
+    font-size: 0.56rem;
+    font-weight: 200;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--accent);
+    opacity: 0.7;
+}
+
+.brew-chip-group:first-child {
+    flex: 1.85;
+    min-width: 215px;
+}
+
+.brew-chip-group:last-child {
+    flex: 0.9;
+    min-width: 118px;
+}
+
+/* ── Smart Card Inner ── */
+.brew-chip-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+}
+
+/* ── Individual Chip (tappable smart card) ── */
+.brew-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    min-width: 0;
+    width: 100%;
+    font-family: 'Sora', sans-serif;
+}
+
+.brew-chip:active {
+    transform: scale(0.97);
+}
+
+.brew-chip:hover {
+    border-color: rgba(212, 165, 116, 0.3);
+}
+
+.brew-chip-label {
+    font-size: 0.78rem;
+    font-weight: 300;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+#grinder-chip .brew-chip-label {
+    font-size: 0.78rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#method-chip .brew-chip-label {
+    font-size: 0.78rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.brew-chip-caret {
+    width: 10px;
+    height: 10px;
+    flex-shrink: 0;
+    color: var(--accent);
+    opacity: 0.45;
+    margin-left: auto;
+}
+
+body.light-mode .brew-chip {
+    background: #ffffff;
+    border-color: var(--border);
+}
+
+body.light-mode .brew-chip:hover {
+    border-color: rgba(139, 100, 60, 0.3);
+}
+
+/* ── Picker List (inside modal) ── */
+.picker-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.picker-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 16px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    text-align: left;
+    font-family: 'Sora', sans-serif;
+}
+
+.picker-option:hover {
+    background: rgba(212, 165, 116, 0.06);
+    border-color: rgba(212, 165, 116, 0.12);
+}
+
+.picker-option.active {
+    background: rgba(212, 165, 116, 0.1);
+    border-color: rgba(212, 165, 116, 0.3);
+}
+
+.picker-option-name {
+    font-size: 0.88rem;
+    font-weight: 400;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.picker-option-detail {
+    font-size: 0.7rem;
+    font-weight: 200;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+.picker-check {
+    margin-left: auto;
+    font-size: 1rem;
+    color: var(--accent);
+    opacity: 0;
+    flex-shrink: 0;
+    transition: opacity 0.15s;
+}
+
+.picker-option.active .picker-check {
+    opacity: 1;
+}
+
+#grinderModal .modal-content,
+#methodModal .modal-content {
+    max-width: 408px;
+    padding: 27px;
+}
+
+#grinderModal .popup-header-standard,
+#methodModal .popup-header-standard {
+    padding-bottom: 12px;
+    margin-bottom: 17px;
+}
+
+#grinderModal .popup-header-standard svg,
+#methodModal .popup-header-standard svg {
+    width: 20px;
+    height: 20px;
+}
+
+#grinderModal .popup-header-standard h2,
+#methodModal .popup-header-standard h2 {
+    font-size: 1.02rem;
+}
+
+#grinderModal .picker-option,
+#methodModal .picker-option {
+    padding: 12px 14px;
+    gap: 10px;
+}
+
+#grinderModal .picker-option-name,
+#methodModal .picker-option-name {
+    font-size: 0.75rem;
+}
+
+#grinderModal .picker-option-detail,
+#methodModal .picker-option-detail {
+    font-size: 0.6rem;
+}
+
+#grinderModal .picker-check,
+#methodModal .picker-check {
+    font-size: 0.85rem;
+}
+
+body.light-mode .picker-option:hover {
+    background: rgba(139, 100, 60, 0.06);
+    border-color: rgba(139, 100, 60, 0.12);
+}
+
+body.light-mode .picker-option.active {
+    background: rgba(139, 100, 60, 0.08);
+    border-color: rgba(139, 100, 60, 0.25);
+}
+
+/* ── Process chip in manual form ── */
+.process-chip {
+    width: 100%;
+    justify-content: space-between;
+}
+
+.process-chip .brew-chip-label {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+.process-chip.has-value .brew-chip-label {
+    color: var(--text-primary);
+}
+
+/* ── Process Picker Modal ── */
+#processModal .modal-content {
+    max-width: 408px;
+    padding: 27px;
+}
+
+#processModal .popup-header-standard {
+    padding-bottom: 12px;
+    margin-bottom: 17px;
+}
+
+#processModal .popup-header-standard svg {
+    width: 20px;
+    height: 20px;
+}
+
+#processModal .popup-header-standard h2 {
+    font-size: 1.02rem;
+}
+
+#processModal .picker-option {
+    padding: 12px 14px;
+    gap: 10px;
+}
+
+#processModal .picker-option-name {
+    font-size: 0.75rem;
+}
+
+#processModal .picker-option-detail {
+    font-size: 0.6rem;
+}
+
+#processModal .picker-check {
+    font-size: 0.85rem;
+}
+
+/* ==========================================
+   8. COFFEE CARDS
+   ========================================== */
+
+.coffee-list {
+    display: grid;
+    gap: 20px;
+    overflow: visible;
+}
+
+.coffee-card {
+    background: linear-gradient(
+        135deg,
+        rgba(212, 165, 116, 0.10) 0%,
+        rgba(212, 165, 116, 0.04) 28%,
+        var(--bg-secondary) 55%
+    );
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    cursor: pointer;
+    transition: transform 0.3s, box-shadow 0.3s, background 0.3s ease;
+    position: relative;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+}
+
+body.light-mode .coffee-card {
+    background: linear-gradient(
+        135deg,
+        rgba(139, 90, 43, 0.07) 0%,
+        rgba(139, 90, 43, 0.025) 28%,
+        var(--bg-secondary) 55%
+    );
+}
+
+.coffee-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px var(--shadow);
+}
+
+.coffee-card.expanded {
+    background: var(--bg-secondary);
+    box-shadow: 0 12px 32px var(--shadow);
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+}
+
+body.light-mode .coffee-card.expanded {
+    background: var(--bg-secondary);
+}
+
+.coffee-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 10px;
+    position: relative;
+}
+
+.coffee-name {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    /* Premium gold-to-cream text gradient */
+    background: linear-gradient(
+        135deg,
+        #d4a574 0%,
+        #e8cba8 45%,
+        #f5e1c8 70%,
+        #d4a574 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    /* Subtle warm micro-glow */
+    filter: drop-shadow(0 0 6px rgba(212, 165, 116, 0.15));
+    transition: filter 0.3s ease, background-position 0.6s ease;
+}
+
+/* Animate gradient on card hover for a rewarding shimmer */
+.coffee-card:hover .coffee-name {
+    background-position: 100% center;
+    filter: drop-shadow(0 0 10px rgba(212, 165, 116, 0.25));
+}
+
+/* Light mode: darker gold gradient that reads well on white */
+body.light-mode .coffee-name {
+    background: linear-gradient(
+        135deg,
+        #8b6f47 0%,
+        #a6844f 45%,
+        #c49a5c 70%,
+        #8b6f47 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 4px rgba(139, 111, 71, 0.1));
+}
+
+body.light-mode .coffee-card:hover .coffee-name {
+    background-position: 100% center;
+    filter: drop-shadow(0 0 8px rgba(139, 111, 71, 0.18));
+}
+
+.coffee-origin {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* ==========================================
+   9. CARD ACTION BUTTONS (Delete, Favorite)
+   ========================================== */
+
+.delete-btn {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    padding: 0;
+    border-radius: 6px;
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    opacity: 0.6;
+}
+
+.delete-btn:hover {
+    opacity: 1;
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+body.light-mode .delete-btn {
+    color: #aaaaaa;
+}
+
+.delete-icon {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
+
+.favorite-btn {
+    position: absolute;
+    top: -10px;
+    right: 58px;
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    padding: 0;
+    border-radius: 6px;
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    opacity: 0.6;
+}
+
+.favorite-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+    opacity: 1;
+}
+
+.favorite-btn:hover {
+    opacity: 1;
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.favorite-btn.active:hover {
+    color: white;
+}
+
+.star-icon {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
+
+.favorite-btn.active .star-icon {
+    fill: currentColor;
+}
+
+/* ==========================================
+   10. PROCESS BADGE & FRESHNESS
+   ========================================== */
+
+.coffee-process {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+/* ─── Bottom-corner badge positioning ─── */
+.process-freshness-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0;
+    margin-top: 12px;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.coffee-process-small {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    padding: 4px 10px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.68rem;
+    font-weight: 500;
+    pointer-events: auto;
+    transition: all 0.2s;
+}
+
+.coffee-card:hover .coffee-process-small {
+    opacity: 0.9;
+}
+
+.freshness-badge-inline .freshness-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.68rem;
+    font-weight: 500;
+    pointer-events: auto;
+    opacity: 0.6;
+    transition: all 0.2s;
+}
+
+.coffee-card:hover .freshness-badge-inline .freshness-badge {
+    opacity: 0.85;
+}
+
+/* Freshness badge color overrides — keep tint but match card icon style */
+.freshness-badge-inline .freshness-badge.resting {
+    background: rgba(33, 150, 243, 0.08);
+    border-color: rgba(33, 150, 243, 0.2);
+    color: #2196F3;
+}
+
+.freshness-badge-inline .freshness-badge.sweet {
+    background: rgba(255, 152, 0, 0.08);
+    border-color: rgba(255, 152, 0, 0.2);
+    color: #FF9800;
+}
+
+.freshness-badge-inline .freshness-badge.fading {
+    background: rgba(158, 158, 158, 0.08);
+    border-color: rgba(158, 158, 158, 0.2);
+    color: #9E9E9E;
+}
+
+body.light-mode .freshness-badge-inline .freshness-badge.resting {
+    background: rgba(25, 118, 210, 0.08);
+    border-color: rgba(25, 118, 210, 0.2);
+    color: #1976D2;
+}
+
+body.light-mode .freshness-badge-inline .freshness-badge.sweet {
+    background: rgba(245, 124, 0, 0.08);
+    border-color: rgba(245, 124, 0, 0.2);
+    color: #F57C00;
+}
+
+body.light-mode .freshness-badge-inline .freshness-badge.fading {
+    background: rgba(97, 97, 97, 0.08);
+    border-color: rgba(97, 97, 97, 0.2);
+    color: #616161;
+}
+
+.freshness-icon {
+    width: 12px;
+    height: 12px;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
+
+/* ==========================================
+   11. ROAST DATE
+   ========================================== */
+
+.roast-date-section {
+    background: var(--bg-card);
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+}
+
+.roast-date-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.roast-icon {
+    width: 20px;
+    height: 20px;
+    stroke: var(--accent);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+    flex-shrink: 0;
+}
+
+.roast-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+.roast-date-input {
+    width: 100%;
+    min-width: 148px;
+    max-width: 172px;
+    height: 34px;
+    padding: 4px 8px;
+    background: var(--bg-secondary);
+    border: 1px solid color-mix(in srgb, var(--border) 80%, transparent 20%);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 0.74rem;
+    font-family: inherit;
+    line-height: 1;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.roast-date-input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.roast-date-input::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    filter: invert(0.5);
+}
+
+body.light-mode .roast-date-input::-webkit-calendar-picker-indicator {
+    filter: invert(0.2);
+}
+
+/* ==========================================
+   12. WATER HARDNESS BADGE
+   ========================================== */
+
+.water-hardness-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 4px 10px;
+    background: rgba(212, 165, 116, 0.15);
+    border: 1px solid rgba(212, 165, 116, 0.3);
+    color: var(--accent);
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    opacity: 0.4;
+    transition: opacity 0.2s;
+}
+
+.water-hardness-badge:hover {
+    opacity: 1;
+}
+
+body.light-mode .water-hardness-badge {
+    background: rgba(139, 90, 43, 0.12);
+    border-color: rgba(139, 90, 43, 0.25);
+}
+
+/* ==========================================
+   13. BREW PARAMETERS & PARAM GRID
+   ========================================== */
+
+.brew-params {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    display: none;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+}
+
+.coffee-card.expanded .brew-params {
+    display: block;
+}
+
+.param-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.param-box {
+    background: var(--bg-card);
+    padding: 10px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.param-label {
+    font-family: 'Sora', sans-serif;
+    font-size: 0.62rem;
+    font-weight: 300;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.35px;
+    white-space: nowrap;
+}
+
+.param-value {
+    font-family: 'Sora', sans-serif; /* Schriftart hinzufügen */
+    font-size: 1.0rem;
+    font-weight: 300;                /* Von 700 auf 200/300 reduziert */
+    color: var(--accent);
+}
+
+.param-value-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.param-adjust {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+}
+
+.adjust-btn {
+    width: 29px;
+    height: 29px;
+    padding: 0;
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 50%;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    line-height: 1;
+}
+
+.adjust-btn:hover {
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+.reset-adjustments-btn {
+    display: block;
+    margin: 20px auto 0;
+    padding: 8px 20px;
+    background: transparent;
+    color: #ff6b6b;
+    border: 1px solid #ff6b6b;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.reset-adjustments-btn:hover {
+    background: rgba(255, 107, 107, 0.1);
+}
+
+/* ==========================================
+   14. RATIO CONTROL (SLIDER)
+   ========================================== */
+
+.ratio-control {
+    background: var(--bg-card);
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    height: auto !important;
+    overflow: visible !important;
+}
+
+.ratio-control h4 {
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.ratio-slider {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ratio-value-display {
+    text-align: center;
+    padding: 8px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+.ratio-value {
+    font-size: 1.3rem;
+    font-weight: 500;
+    color: var(--accent);
+}
+
+.slider-track {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.slider-track span {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    min-width: 30px;
+}
+
+.ratio-slider input[type="range"] {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    flex: 1;
+    background: transparent;
+    outline: none;
+    cursor: pointer;
+}
+
+.ratio-slider input[type="range"]::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 3px;
+    background: var(--accent);
+    border-radius: 2px;
+}
+
+.ratio-slider input[type="range"]::-moz-range-track {
+    width: 100%;
+    height: 3px;
+    background: var(--accent);
+    border-radius: 2px;
+    border: none;
+}
+
+.ratio-slider input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    background: white;
+    border: 2px solid var(--text-secondary);
+    cursor: grab;
+    margin-top: -7.5px;
+}
+
+.ratio-slider input[type="range"]::-webkit-slider-thumb:active {
+    cursor: grabbing;
+}
+
+.ratio-slider input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    background: white;
+    border: 2px solid var(--text-secondary);
+    cursor: grab;
+}
+
+.ratio-slider input[type="range"]::-moz-range-thumb:active {
+    cursor: grabbing;
+}
+
+body.light-mode .ratio-slider input[type="range"]::-webkit-slider-thumb {
+    border-color: var(--border);
+}
+
+body.light-mode .ratio-slider input[type="range"]::-moz-range-thumb {
+    border-color: var(--border);
+}
+
+/* ==========================================
+   15. BREW STEPS
+   ========================================== */
+
+.brew-steps {
+    background: var(--bg-card);
+    padding: 16px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    height: auto !important;
+    overflow: visible !important;
+}
+
+.brew-steps h4 {
+    margin-bottom: 14px;
+    color: var(--text-primary);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.step {
+    margin-bottom: 12px;
+    padding-left: 12px;
+    border-left: 2px solid var(--accent);
+    position: relative;
+}
+
+.step-time {
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 0.85rem;
+}
+
+.step-action {
+    color: var(--text-secondary);
+    margin-top: 3px;
+    line-height: 1.4;
+    font-size: 0.85rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.step-progress {
+    margin-top: 6px;
+    height: 3px;
+    background: rgba(76, 175, 80, 0.15);
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+}
+
+.step-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #4CAF50 0%, #66BB6A 100%);
+    border-radius: 3px;
+    transition: width 0.5s ease-out;
+    will-change: width;
+}
+
+body.light-mode .step-progress {
+    background: rgba(76, 175, 80, 0.2);
+}
+
+body.light-mode .step-progress-bar {
+    background: linear-gradient(90deg, #2E7D32 0%, #43A047 100%);
+}
+
+/* ==========================================
+   16. BREW TIMER
+   ========================================== */
+
+.brew-timer-section {
+    background: var(--bg-card);
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    height: auto !important;
+    overflow: visible !important;
+}
+
+.timer-display {
+    font-size: 2.5rem;
+    font-weight: 300;
+    text-align: center;
+    color: var(--accent);
+    margin-bottom: 16px;
+    font-variant-numeric: tabular-nums;
+}
+
+.timer-controls-main {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+.timer-controls-secondary {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.timer-btn {
+    padding: 10px 20px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: center;
+}
+
+.timer-btn-secondary {
+    min-width: 100px;
+}
+
+.timer-btn.start-brew {
+    background: #4CAF50;
+    color: white;
+    border-color: #4CAF50;
+    min-width: 200px;
+    padding: 12px 24px;
+    font-size: 0.95rem;
+}
+
+.timer-btn.start-brew:hover {
+    background: #45a049;
+}
+
+.timer-btn.brewing {
+    background: #ff9800;
+    border-color: #ff9800;
+    color: white;
+}
+
+.timer-btn:hover {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+
+.timer-btn.active {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+
+.v60-icon {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+    flex-shrink: 0;
+    filter: brightness(0) invert(1);
+}
+
+/* ==========================================
+   17. FEEDBACK SECTION
+   ========================================== */
+
+.feedback-section {
+    background: var(--bg-card);
+    padding: 20px;
+    border-radius: 12px;
+    margin-top: 16px;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+}
+
+.feedback-section h4 {
+    margin-bottom: 14px;
+    color: var(--text-primary);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.feedback-group {
+    margin-bottom: 18px;
+}
+
+.feedback-cupping-note {
+    margin-top: -2px;
+    margin-bottom: 14px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.feedback-label {
+    display: block;
+    margin-bottom: 7px;
+    color: var(--accent);
+    font-size: 0.76rem;
+    font-weight: 500;
+}
+
+.feedback-scale-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.feedback-slider-track-layer {
+    position: relative;
+    height: 18px;
+    width: 87%;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    overflow: visible;
+}
+
+.feedback-slider-track-layer::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 2.4px;
+    border-radius: 999px;
+    background: var(--accent);
+    transform: translateY(-50%);
+    z-index: 1;
+    pointer-events: none;
+}
+
+.feedback-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 18px;
+    background: transparent;
+    outline: none;
+    cursor: default;
+    pointer-events: none;
+    position: relative;
+    z-index: 3;
+}
+
+.feedback-slider::-webkit-slider-runnable-track {
+    height: 2.4px;
+    border-radius: 999px;
+    background: transparent;
+    pointer-events: none;
+}
+
+.feedback-slider::-moz-range-track {
+    height: 2.4px;
+    border-radius: 999px;
+    background: transparent;
+    pointer-events: none;
+}
+
+.feedback-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    border: 1px solid #6d3e1f;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22);
+    margin-top: -7.8px;
+    pointer-events: all;
+    cursor: grab;
+    touch-action: none;
+}
+
+.feedback-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    border: 1px solid #6d3e1f;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22);
+    pointer-events: all;
+    cursor: grab;
+}
+
+.feedback-slider-marks {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    width: 100%;
+    height: 0;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.feedback-slider-mark {
+    position: absolute;
+    top: 0;
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    background: var(--accent);
+    transform: translate(-50%, -50%);
+}
+
+.feedback-slider-mark:nth-child(1) {
+    left: 0;
+}
+
+.feedback-slider-mark:nth-child(2) {
+    left: 50%;
+}
+
+.feedback-slider-mark:nth-child(3) {
+    left: 100%;
+}
+
+.feedback-slider-labels {
+    width: 87%;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: center;
+    font-size: 0.64rem;
+    font-weight: 300;
+    text-transform: lowercase;
+    color: color-mix(in srgb, var(--text-secondary) 78%, #fff 22%);
+}
+
+.feedback-slider-labels span:nth-child(1) {
+    text-align: left;
+}
+
+.feedback-slider-labels span:nth-child(2) {
+    text-align: center;
+}
+
+.feedback-slider-labels span:nth-child(3) {
+    text-align: right;
+}
+
+body.light-mode .feedback-slider::-webkit-slider-thumb {
+    border-color: #8b5a2b;
+}
+
+body.light-mode .feedback-slider::-moz-range-thumb {
+    border-color: #8b5a2b;
+}
+
+
+body.light-mode .feedback-slider-labels {
+    color: #7a7a7a;
+}
+
+.feedback-suggestion {
+    background: var(--bg-secondary);
+    border-left: 4px solid var(--accent);
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 24px;
+}
+
+.suggestion-title {
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 12px;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.suggestion-text {
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 16px;
+}
+
+.suggestion-values {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.suggestion-value {
+    background: var(--bg-card);
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.suggestion-value strong {
+    color: var(--accent);
+}
+
+.apply-suggestion-btn {
+    margin-top: 16px;
+    background: var(--accent);
+    color: white;
+}
+
+.history-btn {
+    display: block;
+    width: fit-content;
+    margin: 14px auto 0;
+    padding: 8.5px 17px;
+    font-size: 0.7225rem;
+    background: #4CAF50;
+    border: 1px solid #4CAF50;
+    color: white;
+}
+
+.history-btn:hover {
+    background: #45a049;
+    border-color: #45a049;
+    color: white;
+}
+
+.history-list {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.history-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+}
+
+.history-item-top {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 10px;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+}
+
+.history-item-top strong {
+    color: var(--text-primary);
+    font-size: 0.88rem;
+}
+
+.history-item-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.history-item-grid div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: var(--bg-secondary);
+    padding: 8px 10px;
+    border-radius: 8px;
+}
+
+.history-item-grid span {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.history-item-grid strong {
+    color: var(--text-primary);
+    font-size: 0.84rem;
+    font-weight: 600;
+}
+
+/* ==========================================
+   18. FIXED CONTROLS (Bottom-Right)
+   ========================================== */
+
+.fixed-controls {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    display: flex;
+    gap: 12px;
+    z-index: 1000;
+}
+
+.control-btn {
+    width: 40px;
+    height: 40px;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 16px var(--shadow);
+    transition: all 0.2s;
+    opacity: 0.6;
+}
+
+.control-icon {
+    width: 20px;
+    height: 20px;
+    stroke: var(--text-primary);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
+
+.control-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px var(--shadow);
+    opacity: 1;
+}
+
+.control-btn:hover .control-icon {
+    stroke: var(--accent);
+}
+
+/* waterControlBtn: no active state — identical to all other control buttons */
+
+/* ==========================================
+   19. MODALS
+   ========================================== */
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.8rem;
+    cursor: pointer;
+    padding: 0;
+    width: auto;
+    line-height: 1;
+}
+
+/* Manual Water Hardness Input Group */
+.manual-hardness-group {
+    margin-top: 24px;
+    padding: 20px;
+    background: var(--bg-card);
+    border-radius: 12px;
+    border-left: 4px solid var(--accent);
+}
+
+.manual-hardness-input-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.manual-hardness-input-row input[type="number"] {
+    flex: 1;
+    min-width: 0;
+}
+
+.manual-hardness-input-row button {
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 14px 20px;
+    width: auto;
+}
+
+/* Mobile optimization */
+@media (max-width: 480px) {
+    .manual-hardness-input-row {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .manual-hardness-input-row button {
+        width: 100%;
+    }
+}
+
+/* ==========================================
+   20. DECAF (TRASH BIN) CARDS
+   ========================================== */
+
+.decaf-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.decaf-card-info {
+    flex: 1;
+}
+
+.decaf-card-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.decaf-card-origin {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.restore-btn {
+    padding: 8px 16px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.restore-btn:hover {
+    background: var(--accent-hover);
+}
+
+.decaf-card-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.permanent-delete-btn {
+    padding: 8px 16px;
+    background: transparent;
+    color: #ff6b6b;
+    border: 1px solid #ff6b6b;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.permanent-delete-btn:hover {
+    background: rgba(255, 107, 107, 0.15);
+}
+
+.decaf-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary);
+}
+
+/* ==========================================
+   21. STATUS MESSAGES & STATES
+   ========================================== */
+
+.loading, .error-message, .success-message {
+    text-align: center;
+    padding: 16px;
+    border-radius: 12px;
+    margin-top: 16px;
+}
+
+.error-message {
+    background: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    color: #ff6b7a;
+}
+
+.success-message {
+    background: rgba(40, 167, 69, 0.1);
+    border: 1px solid rgba(40, 167, 69, 0.3);
+    color: #5fda7d;
+}
+
+body.light-mode .error-message {
+    color: #c62828;
+    background: rgba(198, 40, 40, 0.06);
+    border-color: rgba(198, 40, 40, 0.2);
+}
+
+body.light-mode .success-message {
+    color: #2e7d32;
+    background: rgba(46, 125, 50, 0.06);
+    border-color: rgba(46, 125, 50, 0.2);
+}
+
+/* Light-mode contrast for destructive actions */
+body.light-mode .reset-adjustments-btn {
+    color: #c62828;
+    border-color: #c62828;
+}
+
+body.light-mode .reset-adjustments-btn:hover {
+    background: rgba(198, 40, 40, 0.08);
+}
+
+body.light-mode .permanent-delete-btn {
+    color: #c62828;
+    border-color: #c62828;
+}
+
+body.light-mode .permanent-delete-btn:hover {
+    background: rgba(198, 40, 40, 0.08);
+}
+
+.empty-state {
+    padding: 20px 16px 48px;
+}
+
+.onboarding-card {
+    max-width: 420px;
+    margin: 0 auto;
+    text-align: center;
+    padding: 22px 18px;
+    background: linear-gradient(
+        160deg,
+        rgba(212, 165, 116, 0.06) 0%,
+        rgba(212, 165, 116, 0.02) 40%,
+        var(--bg-secondary) 100%
+    );
+    border: 1px solid rgba(212, 165, 116, 0.1);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.onboarding-icon {
+    width: 44px;
+    height: 44px;
+    margin: 0;
+    background: rgba(212, 165, 116, 0.06);
+    border: 1px solid rgba(212, 165, 116, 0.12);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.onboarding-text {
+    font-family: 'Sora', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 200;
+    line-height: 1.65;
+    color: var(--accent);
+    letter-spacing: 0.01em;
+    margin: 0;
+}
+
+.onboarding-enjoy {
+    display: block;
+    margin-top: 4px;
+}
+
+body.light-mode .onboarding-card {
+    background: linear-gradient(
+        160deg,
+        rgba(139, 111, 71, 0.04) 0%,
+        rgba(139, 111, 71, 0.015) 40%,
+        var(--bg-secondary) 100%
+    );
+    border-color: rgba(139, 111, 71, 0.1);
+}
+
+body.light-mode .onboarding-icon {
+    background: rgba(139, 111, 71, 0.05);
+    border-color: rgba(139, 111, 71, 0.1);
+}
+
+/* ==========================================
+   22. SPINNER ANIMATION
+   ========================================== */
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.spinner {
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+/* ==========================================
+   23. RESPONSIVE BREAKPOINTS
+   ========================================== */
+
+/* Tablet & Mobile (≤768px) */
+@media (max-width: 768px) {
+    body {
+        padding: 20px 16px 100px;
+    }
+
+    h1 {
+        font-size: 1.5rem;
+        letter-spacing: 0.24em;
+    }
+
+    .header-logo {
+        height: 60px;
+    }
+
+    .upload-button,
+    .manual-button {
+        width: auto;
+        padding: 10px 14px;
+        font-size: 0.74rem;
+    }
+
+    .empty-state {
+        padding-top: 12px;
+    }
+
+    .onboarding-card {
+        max-width: 100%;
+        margin-top: -2px;
+        padding: 18px 14px;
+        gap: 8px;
+    }
+
+    .onboarding-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+    }
+
+    .onboarding-text {
+        font-size: 0.76rem;
+        line-height: 1.55;
+    }
+
+    .global-grinder-selector {
+        gap: 10px;
+        padding: 14px 16px;
+        top: 10px;
+    }
+
+    .brew-chip {
+        padding: 9px 12px;
+        gap: 6px;
+    }
+
+    .brew-chip-label {
+        font-size: 0.74rem;
+    }
+
+    .picker-option {
+        padding: 12px 14px;
+    }
+
+    .brew-chip-row {
+        gap: 10px;
+    }
+
+    .brew-chip-group:first-child {
+        min-width: 0;
+        flex: 1.6;
+    }
+
+    .brew-chip-group:last-child {
+        min-width: 0;
+        flex: 0.92;
+    }
+
+    #grinder-chip .brew-chip-label {
+        font-size: 0.71rem;
+    }
+
+    #method-chip .brew-chip-label {
+        font-size: 0.71rem;
+    }
+
+    .param-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+
+    .param-label {
+        font-size: 0.58rem;
+    }
+
+    .param-value-row {
+        gap: 5px;
+    }
+
+    .adjust-btn {
+        width: 26px;
+        height: 26px;
+        font-size: 0.75rem;
+    }
+
+    .timer-display {
+        font-size: 2rem;
+    }
+
+    .coffee-card {
+        padding: 18px;
+    }
+
+    .ratio-control {
+        padding: 14px;
+        margin-bottom: 14px;
+    }
+
+    .brew-steps {
+        padding: 14px;
+        margin-bottom: 14px;
+    }
+
+    .feedback-section {
+        padding: 18px;
+    }
+
+    .feedback-slider::-webkit-slider-thumb {
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
+        margin-top: -6.8px;
+    }
+
+    .feedback-slider::-moz-range-thumb {
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
+    }
+
+    .feedback-slider-labels {
+        font-size: 0.58rem;
+    }
+
+    .param-box {
+        padding: 10px;
+    }
+
+    .param-value {
+        font-size: 1.2rem;
+    }
+
+    .step-action {
+        font-size: 0.8rem;
+    }
+}
+
+/* Desktop (≥769px) */
+@media (min-width: 769px) {
+    .global-grinder-selector {
+        flex-direction: row;
+        justify-content: center;
+    }
+}
+
+/* Small phones (≤400px) */
+@media (max-width: 400px) {
+    h1 {
+        font-size: 1.3rem;
+        letter-spacing: 0.22em;
+    }
+
+    .header-logo {
+        height: 52px;
+    }
+
+    .coffee-name {
+        font-size: 1.3rem;
+    }
+
+    .param-box {
+        padding: 16px;
+    }
+
+    .param-value {
+        font-size: 1.2rem;
+    }
+
+    .brew-chip-label {
+        font-size: 0.7rem;
+    }
+
+    .brew-chip {
+        padding: 8px 10px;
+    }
+
+    .picker-option-detail {
+        display: none;
+    }
+
+    .brew-chip-group-label {
+        font-size: 0.52rem;
+    }
+}
+
+/* ==========================================
+   24. WATER HARDNESS MODAL COMPONENTS
+   ========================================== */
+
+.input-btn-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.water-modal-content {
+    max-height: 86vh;
+}
+
+.water-modal-content .form-group label {
+    font-size: 0.72rem;
+}
+
+.water-modal-content .input-btn-row input {
+    flex: 1;
+    padding: 9px 12px;
+    font-size: 0.82rem;
+}
+
+.water-modal-content .inline-save-btn {
+    padding: 9px 14px;
+    font-size: 0.72rem;
+}
+
+.form-group--mt {
+    margin-top: 14px;
+}
+
+.form-helper {
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+    margin-top: 6px;
+}
+
+.water-result-box {
+    margin-top: 0;
+    margin-bottom: 14px;
+    padding: 12px 16px;
+    background: var(--bg-card);
+    border: 1px solid rgba(212, 165, 116, 0.16);
+    border-radius: 12px;
+}
+
+.water-result-center {
+    text-align: center;
+    margin-bottom: 0;
+}
+
+.water-result-value {
+    font-size: 1.485rem;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 2px;
+}
+
+.water-result-category {
+    font-size: 0.84rem;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    letter-spacing: 0.08em;
+}
+
+.water-result-source {
+    font-size: 0.68rem;
+    padding: 4px 12px;
+    background: rgba(212, 165, 116, 0.15);
+    border-radius: 12px;
+    display: inline-block;
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.water-impact-info {
+    margin-bottom: 10px;
+}
+
+.water-impact-info p {
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+
+.water-scale-minimal {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 0.66rem;
+    color: var(--text-secondary);
+}
+
+.water-scale-minimal span {
+    padding: 4px 8px;
+    border: 1px solid rgba(212, 165, 116, 0.18);
+    border-radius: 999px;
+    background: rgba(212, 165, 116, 0.04);
+}
+
+/* ==========================================
+   25. COMPOST MODAL COMPONENTS
+   ========================================== */
+
+.modal-content--narrow {
+    max-width: 480px;
+}
+
+.decaf-list {
+    margin-top: 20px;
+}
+
+.decaf-empty {
+    padding: 48px 20px;
+    text-align: center;
+}
+
+.compost-empty-icon {
+    width: 76px;
+    height: 76px;
+    background: rgba(200, 169, 126, 0.06);
+    border: 1px solid rgba(200, 169, 126, 0.12);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+}
+
+.compost-empty-svg {
+    opacity: 0.4;
+}
+
+.compost-empty-title {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+
+.compost-confirm-modal-content {
+    max-width: 440px;
+}
+
+.compost-confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.compost-confirm-actions button {
+    width: auto;
+}
+
+.compost-confirm-btn-secondary {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+}
+
+.compost-confirm-btn-secondary:hover {
+    background: color-mix(in srgb, var(--bg-card) 78%, var(--accent) 22%);
+    color: var(--text-primary);
+}
+
+/* ==========================================
+   26. MISC UI HELPERS
+   ========================================== */
+
+.activation-status {
+    padding: 16px;
+    border-radius: 8px;
+    margin-top: 16px;
+    margin-bottom: 16px;
+}
+
+.loading-text {
+    margin-top: 12px;
+}
+
+/* ==========================================
+   27. UI COMPONENTS — STANDARDIZED POPUPS
+   ========================================== */
+
+/* ─── .popup-header-standard ─── 
+   Universal flex header for all popup/modal heads.
+   Icon + h2 title sit side-by-side, with a fine gold
+   separator underneath. The header MUST be closed
+   before the rest of the modal content begins.        */
+
+.popup-header-standard {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 14px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(212, 165, 116, 0.15);
+    position: relative;          /* keeps z-context local */
+    z-index: 1;
+}
+
+.popup-header-standard .popup-title-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;               /* allow text truncation */
+}
+
+.popup-header-standard svg {
+    width: 24px;
+    height: 24px;
+    stroke: var(--accent);
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+    flex-shrink: 0;
+}
+
+.popup-header-standard h2 {
+    margin: 0;
+    font-family: 'Sora', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 200;           /* default thin weight */
+    color: var(--text-primary);
+    letter-spacing: 0.01em;
+    line-height: 1.3;
+}
+
+/* Compost variant: slightly heavier title */
+.popup-header-standard h2.popup-title--medium {
+    font-weight: 400;
+}
+
+.popup-header-standard .close-btn {
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+/* ─── .info-box-standard ─── 
+   Universal info-box / callout.
+   Transparent gold background, subtle border,
+   <strong> title in accent colour, body text below.    */
+
+.info-box-standard {
+    margin-bottom: 20px;
+    padding: 16px;
+    background: rgba(212, 165, 116, 0.05);
+    border: 1px solid rgba(212, 165, 116, 0.15);
+    border-radius: 12px;
+}
+
+body.light-mode .info-box-standard {
+    background: rgba(139, 111, 71, 0.04);
+    border-color: rgba(139, 111, 71, 0.12);
+}
+
+.info-box-standard strong {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 6px;
+}
+
+.info-box-standard p,
+.info-box-standard .info-box-text {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* When the info-box holds a scale/list */
+.info-box-standard .water-scale-list {
+    margin-top: 10px;
+}
+
+/* ==========================================
+   CARD EDITOR – CSS ADDITIONS
+   ==========================================
+   
+/* ==========================================
+   ROASTERY LABEL (above coffee-name)
+   ========================================== */
+
+.coffee-roastery {
+    font-family: 'Sora', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 0.7rem;
+    font-weight: 200;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin: -4px 0 6px 0;
+    line-height: 1.3;
+}
+
+body.light-mode .coffee-roastery {
+    color: var(--accent);
+    opacity: 0.85;
+}
+
+/* ==========================================
+   EDIT BUTTON (between Favorite and Delete)
+   ========================================== */
+
+.edit-btn {
+    position: absolute;
+    top: -10px;
+    right: 24px;
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    padding: 0;
+    border-radius: 6px;
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    opacity: 0.6;
+}
+
+.edit-btn:hover {
+    opacity: 1;
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.edit-btn.editing {
+    background: rgba(76, 175, 80, 0.15);
+    border-color: #4CAF50;
+    color: #4CAF50;
+    opacity: 1;
+}
+
+body.light-mode .edit-btn {
+    color: #aaaaaa;
+}
+
+body.light-mode .edit-btn.editing {
+    background: rgba(46, 125, 50, 0.1);
+    border-color: #2E7D32;
+    color: #2E7D32;
+}
+
+.edit-icon {
+    width: 16px;
+    height: 16px;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
+
+/* ==========================================
+   INLINE EDIT INPUTS
+   ========================================== */
+
+.coffee-card .inline-edit-input {
+    background: transparent;
+    border: 1px solid rgba(212, 165, 116, 0.2);
+    border-radius: 6px;
+    padding: 4px 8px;
+    color: var(--text-primary);
+    font-family: 'Sora', -apple-system, BlinkMacSystemFont, sans-serif;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.coffee-card .inline-edit-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(212, 165, 116, 0.15);
+}
+
+/* Name-Input: inherits coffee-name sizing */
+.coffee-card .inline-edit-input.edit-name {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--accent);
+}
+
+/* Roastery-Input: matches label style */
+.coffee-card .inline-edit-input.edit-roastery {
+    font-size: 0.7rem;
+    font-weight: 200;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--accent);
+    margin-bottom: 4px;
+}
+
+/* Origin-Input */
+.coffee-card .inline-edit-input.edit-origin {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+}
+
+/* Light mode adjustments */
+body.light-mode .coffee-card .inline-edit-input {
+    border-color: rgba(139, 90, 43, 0.2);
+}
+
+body.light-mode .coffee-card .inline-edit-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(139, 90, 43, 0.12);
+}
+
+/* ── Fix: Im Edit-Modus Textfelder unter die Buttons rücken ── */
+.coffee-card.editing .coffee-header > div:first-child {
+    padding-top: 28px;
+}
+
+/* ── Edit-Button Hover-Glow im Editing-State ── */
+.edit-btn.editing:hover {
+    background: rgba(76, 175, 80, 0.25);
+}
+
+/* ====== SETTINGS: IMPRESSUM & DATENSCHUTZ ====== */
+
+/* Thin divider line between "Activate Device" and legal section */
+.settings-divider {
+    border: none;
+    border-top: 1px solid rgba(128, 128, 128, 0.2);
+    margin: 20px 0 16px;
+}
+
+/* Legal buttons row */
+.settings-legal {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.settings-legal-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 12px;
+    background: transparent;
+    border: 1px solid rgba(128, 128, 128, 0.25);
+    border-radius: 10px;
+    font-size: 0.78rem;
+    font-family: inherit;
+    color: var(--text-secondary, #888);
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    letter-spacing: 0.02em;
+}
+
+.settings-legal-btn svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+
+.settings-legal-btn:hover {
+    background: rgba(128, 128, 128, 0.08);
+    border-color: rgba(128, 128, 128, 0.45);
+    color: var(--text-primary, #333);
+}
+
+/* Legal modal content area */
+.legal-content {
+    padding: 4px 0 8px;
+    font-size: 0.82rem;
+    line-height: 1.65;
+    color: var(--text-secondary, #666);
+    overflow-y: auto;
+    max-height: 65vh;
+}
+
+.legal-content p {
+    margin: 0 0 10px;
+}
+
+.legal-content strong {
+    display: block;
+    margin-top: 14px;
+    margin-bottom: 2px;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-primary, #444);
+    opacity: 0.75;
+}
+
+/* Placeholder reminder note */
+.legal-note {
+    margin-top: 20px !important;
+    padding: 10px 12px;
+    background: rgba(255, 180, 0, 0.08);
+    border-left: 3px solid rgba(255, 180, 0, 0.5);
+    border-radius: 4px;
+    font-size: 0.75rem;
+    color: var(--text-secondary, #888);
+    font-style: italic;
+}
