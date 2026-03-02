@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 // GRINDER PREFERENCE ENDPOINTS (V5.2)
 // ==========================================
 
@@ -10,56 +10,40 @@ const router = express.Router();
 
 /**
  * Get Grinder Preference
- * GET /
+ * GET /api/user/grinder
  */
 router.get('/', authenticateUser, async (req, res) => {
     try {
         const grinder = await queries.getGrinderPreference(req.user.id);
-
-        res.json({ 
-            success: true, 
-            grinder: grinder 
-        });
-
+        res.json({ success: true, grinder });
     } catch (error) {
-        console.error('Get grinder error:', error.message);
-        res.status(500).json({ 
-            success: false,
-            error: 'Server error' 
-        });
+        console.error('[ERROR] GET /user/grinder:', error.message);
+        res.status(500).json({ success: false, error: 'Server error' });
     }
 });
 
 /**
  * Update Grinder Preference
- * POST /
+ * POST /api/user/grinder
  */
 router.post('/', authenticateUser, async (req, res) => {
     try {
         const { grinder } = req.body;
 
         if (!grinder || !VALID_GRINDERS.includes(grinder)) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                error: `Valid grinder required. Options: ${VALID_GRINDERS.join(', ')}` 
+                error: `Valid grinder required. Options: ${VALID_GRINDERS.join(', ')}`
             });
         }
 
         await queries.updateGrinderPreference(req.user.id, grinder);
-
-        console.log(`⚙️ Grinder updated: ${req.user.username} → ${grinder}`);
-
-        res.json({ 
-            success: true,
-            grinder: grinder
-        });
+        console.log(`[OK] Grinder updated: ${req.user.username} -> ${grinder}`);
+        res.json({ success: true, grinder });
 
     } catch (error) {
-        console.error('Update grinder error:', error.message);
-        res.status(500).json({ 
-            success: false,
-            error: 'Server error' 
-        });
+        console.error('[ERROR] POST /user/grinder:', error.message);
+        res.status(500).json({ success: false, error: 'Server error' });
     }
 });
 

@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 // WATER HARDNESS ENDPOINTS
 // ==========================================
 
@@ -10,65 +10,51 @@ const router = express.Router();
 
 /**
  * Get Water Hardness
- * GET /
+ * GET /api/user/water-hardness
  */
 router.get('/', authenticateUser, async (req, res) => {
     try {
         const waterHardness = await queries.getWaterHardness(req.user.id);
-
-        res.json({ 
-            success: true, 
-            waterHardness: waterHardness 
-        });
-
+        res.json({ success: true, waterHardness });
     } catch (error) {
-        console.error('Get water hardness error:', error.message);
-        res.status(500).json({ 
-            success: false,
-            error: 'Server error' 
-        });
+        console.error('[ERROR] GET /user/water-hardness:', error.message);
+        res.status(500).json({ success: false, error: 'Server error' });
     }
 });
 
 /**
  * Update Water Hardness
- * POST /
+ * POST /api/user/water-hardness
+ *
+ * Accepts a numeric value in degrees of hardness (dH), valid range 0–50.
  */
 router.post('/', authenticateUser, async (req, res) => {
     try {
         const { waterHardness } = req.body;
 
         if (waterHardness === null || waterHardness === undefined) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                error: 'Water hardness value required' 
+                error: 'Water hardness value required'
             });
         }
 
         const hardnessValue = parseFloat(waterHardness);
-        
+
         if (isNaN(hardnessValue) || hardnessValue < 0 || hardnessValue > 50) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                error: 'Valid water hardness required (0-50 °dH)' 
+                error: 'Valid water hardness required (0-50 dH)'
             });
         }
 
         await queries.updateWaterHardness(req.user.id, hardnessValue);
-
-        console.log(`💧 Water hardness updated: ${req.user.username} → ${hardnessValue} °dH`);
-
-        res.json({ 
-            success: true,
-            waterHardness: hardnessValue
-        });
+        console.log(`[OK] Water hardness updated: ${req.user.username} -> ${hardnessValue} dH`);
+        res.json({ success: true, waterHardness: hardnessValue });
 
     } catch (error) {
-        console.error('Update water hardness error:', error.message);
-        res.status(500).json({ 
-            success: false,
-            error: 'Server error' 
-        });
+        console.error('[ERROR] POST /user/water-hardness:', error.message);
+        res.status(500).json({ success: false, error: 'Server error' });
     }
 });
 

@@ -1,4 +1,4 @@
-// ==========================================
+﻿// ==========================================
 // COFFEE DATA ENDPOINTS
 // ==========================================
 
@@ -101,8 +101,6 @@ function normalizeFeedbackHistory(history) {
 
 router.get('/', authenticateUser, async (req, res) => {
     try {
-        await queries.updateLastLogin(req.user.id);
-
         const coffees = await queries.getUserCoffees(req.user.id);
 
         const parsed = coffees.map(c => ({
@@ -179,3 +177,4 @@ router.post('/', authenticateUser, async (req, res) => {
 });
 
 export default router;
+

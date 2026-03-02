@@ -1,41 +1,33 @@
-// ==========================================
+﻿// ==========================================
 // ANTHROPIC API PROXY (PROTECTED)
+// POST /api/analyze-coffee
+//
+// Note: the AI rate limiter (10 req/hour) is applied at mount time in server.js.
+// Do NOT add a second limiter here.
 // ==========================================
 
 import express from 'express';
-import rateLimit from 'express-rate-limit';
 import { authenticateUser } from '../middleware/auth.js';
 import { sanitizeCoffeeData } from '../utils/sanitize.js';
 import { buildCoffeeDefaults, extractCoffeeJsonFromAnthropicResponse } from '../utils/analyzeResponse.js';
 
 const router = express.Router();
 
-const aiLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000,
-    max: 10,
-    message: { 
-        success: false, 
-        error: 'AI analysis limit reached. Please try again in an hour.' 
-    },
-    standardHeaders: true,
-    legacyHeaders: false,
-});
-
-router.post('/', aiLimiter, authenticateUser, async (req, res) => {
+router.post('/', authenticateUser, async (req, res) => {
     try {
         const { imageData, mediaType } = req.body;
 
-        console.log(`📸 Analysis started for user: ${req.user.username}`);
+        console.log(`[OK] Analysis started for user: ${req.user.username}`);
 
         if (!imageData) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                error: 'Image data required' 
+                error: 'Image data required'
             });
         }
 
         if (!process.env.ANTHROPIC_API_KEY) {
-            console.error('Analyze error: Missing ANTHROPIC_API_KEY');
+            console.error('[ERROR] Analyze: Missing ANTHROPIC_API_KEY');
             return res.status(503).json({
                 success: false,
                 error: 'AI analysis is temporarily unavailable. Please try again later.'
@@ -89,7 +81,7 @@ Only return valid JSON or NOT_COFFEE, no other text.`
 
         if (!response.ok) {
             const providerError = data?.error?.message || 'AI provider request failed';
-            console.error('Analyze provider error:', response.status, providerError);
+            console.error(`[ERROR] Analyze provider error: ${response.status} ${providerError}`);
 
             const statusCode = response.status === 429 ? 429 : 502;
             return res.status(statusCode).json({
@@ -108,34 +100,32 @@ Only return valid JSON or NOT_COFFEE, no other text.`
             ?.trim() || '';
 
         if (rawText.toUpperCase().includes('NOT_COFFEE')) {
-            console.log(`📸 Not a coffee image for user: ${req.user.username}`);
+            console.log(`[OK] Not a coffee image for user: ${req.user.username}`);
             return res.status(422).json({
                 success: false,
-                error: 'This doesn\'t appear to be a coffee bag. Please take a photo of a coffee package or label.'
+                error: "This doesn't appear to be a coffee bag. Please take a photo of a coffee package or label."
             });
         }
 
         const coffeeData = extractCoffeeJsonFromAnthropicResponse(data);
 
         // Validate that we got meaningful coffee data (not just defaults)
-        const name = (coffeeData?.name || '').toLowerCase().trim();
+        const name   = (coffeeData?.name   || '').toLowerCase().trim();
         const origin = (coffeeData?.origin || '').toLowerCase().trim();
-        const isGeneric = (!name || name === 'unknown' || name === 'n/a' || name === 'none') &&
+        const isGeneric = (!name   || name   === 'unknown' || name   === 'n/a' || name   === 'none') &&
                           (!origin || origin === 'unknown' || origin === 'n/a' || origin === 'none');
 
         if (isGeneric) {
-            console.log(`📸 Could not extract coffee info for user: ${req.user.username}`);
+            console.log(`[OK] Could not extract coffee info for user: ${req.user.username}`);
             return res.status(422).json({
                 success: false,
                 error: 'Could not recognize coffee details from this image. Try a clearer photo of the label.'
             });
         }
 
-        // Apply defaults before sanitization
+        // Apply defaults then sanitize before returning
         const withDefaults = buildCoffeeDefaults(coffeeData);
-
-        // Sanitize the data before returning
-        const sanitized = sanitizeCoffeeData(withDefaults);
+        const sanitized    = sanitizeCoffeeData(withDefaults);
 
         res.json({
             success: true,
@@ -143,8 +133,8 @@ Only return valid JSON or NOT_COFFEE, no other text.`
         });
 
     } catch (error) {
-        console.error('Analyze error:', error.message);
-        res.status(500).json({ 
+        console.error('[ERROR] /analyze-coffee:', error.message);
+        res.status(500).json({
             success: false,
             error: 'Analysis failed. Please try again.'
         });

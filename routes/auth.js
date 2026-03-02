@@ -1,75 +1,69 @@
-// ==========================================
+﻿// ==========================================
 // AUTHENTICATION ENDPOINTS (V5.2)
 // ==========================================
 
 import express from 'express';
 import { extractAuthCredentials, getDeviceInfo } from '../middleware/auth.js';
-import { queries, getDatabase, getDatabaseType } from '../db/database.js';
+import { queries } from '../db/database.js';
 
 const router = express.Router();
 
 /**
  * Validate Token with Device-Binding
- * GET /validate
- * Beim ersten Login: Token aus registrations → User in users anlegen
+ * GET /api/auth/validate
+ *
+ * On first login: if the token exists in `registrations` but not in `users`,
+ * a new user account is created and the token is marked as used.
+ * On subsequent logins: validates device binding and updates last_login_at.
  */
 router.get('/validate', async (req, res) => {
     try {
         const { token, deviceId } = extractAuthCredentials(req);
 
         if (!token) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                error: 'Token required' 
+                error: 'Token required'
             });
         }
 
         if (!deviceId) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                error: 'Device ID required' 
+                error: 'Device ID required'
             });
         }
 
         let user = await queries.getUserByToken(token);
 
-        // Token nicht in users → prüfen ob in registrations
+        // Token not yet in users — check if it exists in registrations (first-time login)
         if (!user) {
-            const db  = getDatabase();
-            const dbt = getDatabaseType();
-
-            const registration = dbt === 'postgresql'
-                ? await db.get('SELECT * FROM registrations WHERE token = $1', [token])
-                : await db.get('SELECT * FROM registrations WHERE token = ?', [token]);
+            const registration = await queries.getRegistrationByToken(token);
 
             if (!registration) {
-                return res.status(401).json({ 
+                return res.status(401).json({
                     success: false,
                     valid: false,
-                    error: 'Invalid token' 
+                    error: 'Invalid token'
                 });
             }
 
-            // Username aus E-Mail ableiten
+            // Derive a username from the email address (e.g. john.doe@gmail.com -> johndoe_3421)
             const base     = registration.email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '').slice(0, 16);
             const suffix   = Date.now().toString().slice(-4);
             const username = (base || 'user') + '_' + suffix;
 
-            // Neuen User anlegen + Device binden
+            // Create the user account and bind the device in one step
             await queries.createUser(username, token, deviceId, getDeviceInfo(req));
 
-            // Token als used markieren
-            if (dbt === 'postgresql') {
-                await db.run('UPDATE registrations SET used = true WHERE token = $1', [token]);
-            } else {
-                await db.run('UPDATE registrations SET used = 1 WHERE token = ?', [token]);
-            }
+            // Mark the registration token as used so it cannot be redeemed again
+            await queries.markRegistrationUsed(token);
 
-            console.log(`Neuer User angelegt: ${username} (${registration.email})`);
+            console.log(`[OK] New user created: ${username} (${registration.email})`);
             user = await queries.getUserByToken(token);
         }
 
-        // Device-Binding
+        // Enforce device binding — a token can only be used from the device it was first validated on
         if (user.device_id) {
             if (user.device_id !== deviceId) {
                 return res.status(403).json({
@@ -79,8 +73,9 @@ router.get('/validate', async (req, res) => {
                 });
             }
         } else {
+            // First time this user is seen from a device — bind it now
             await queries.bindDevice(user.id, deviceId, getDeviceInfo(req));
-            console.log(`Device bound: User ${user.username} -> Device ${deviceId.substring(0, 8)}...`);
+            console.log(`[OK] Device bound: user ${user.username} -> device ${deviceId.substring(0, 8)}...`);
         }
 
         await queries.updateLastLogin(user.id);
@@ -89,21 +84,21 @@ router.get('/validate', async (req, res) => {
             success: true,
             valid: true,
             user: {
-                id: user.id,
-                username: user.username,
-                deviceId: user.device_id || deviceId,
+                id:                user.id,
+                username:          user.username,
+                deviceId:          user.device_id || deviceId,
                 grinderPreference: user.grinder_preference || 'fellow_gen2',
-                methodPreference: user.method_preference || 'v60',
-                waterHardness: user.water_hardness || null,
-                createdAt: user.created_at
+                methodPreference:  user.method_preference  || 'v60',
+                waterHardness:     user.water_hardness     || null,
+                createdAt:         user.created_at
             }
         });
 
     } catch (error) {
-        console.error('Validate error:', error.message);
-        res.status(500).json({ 
+        console.error('[ERROR] /auth/validate:', error.message);
+        res.status(500).json({
             success: false,
-            error: 'Server error' 
+            error: 'Server error'
         });
     }
 });
