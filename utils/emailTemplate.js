@@ -1,4 +1,4 @@
-﻿// ==========================================
+// ==========================================
 // EMAIL TEMPLATE — Beta Access Token
 // Used by routes/register.js via sendTokenMail()
 // ==========================================
@@ -31,7 +31,7 @@ export function buildTokenEmail(email, token, frontendUrl) {
                             <tr>
                                 <td style="padding-bottom:24px;text-align:left;">
                                     <p style="margin:0 0 3px;font-size:1.3rem;font-weight:200;letter-spacing:0.32em;color:#000000;line-height:1;">
-                                        d r i p&#x2615;m a t e
+                                        drip&middot;mate
                                     </p>
                                     <p style="margin:0;font-size:0.58rem;font-weight:300;letter-spacing:0.22em;text-transform:uppercase;color:#8b6f47;opacity:0.8;">
                                         Precision meets Ritual.
@@ -50,7 +50,7 @@ export function buildTokenEmail(email, token, frontendUrl) {
 
                                     <!-- Intro -->
                                     <p style="margin:0 0 6px;font-size:1.05rem;font-weight:400;color:#1a1a1a;line-height:1.4;">
-                                        Welcome to drip&#x2615;mate.
+                                        Welcome to drip&middot;mate.
                                     </p>
                                     <p style="margin:0 0 8px;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.2em;color:#bbbbbb;font-weight:400;">
                                         Your personal access token is ready:
@@ -69,7 +69,7 @@ export function buildTokenEmail(email, token, frontendUrl) {
                                             <td align="center">
                                                 <a href="${magicLink}"
                                                    style="display:inline-block;background:#8b6f47;color:#ffffff;text-decoration:none;padding:14px 40px;border-radius:10px;font-size:0.9rem;font-weight:600;letter-spacing:0.04em;">
-                                                    Enter drip&#x2615;mate
+                                                    Enter drip&middot;mate
                                                 </a>
                                             </td>
                                         </tr>
@@ -119,7 +119,7 @@ export function buildTokenEmail(email, token, frontendUrl) {
                                 <td style="padding-top:20px;">
                                     <p style="margin:0;font-size:0.68rem;color:#bbbbbb;text-align:center;line-height:1.6;">
                                         This email was sent to ${email}.<br>
-                                        You received it because you were invited to the drip&#x2615;mate beta.
+                                        You received it because you were invited to the drip&middot;mate beta.
                                     </p>
                                 </td>
                             </tr>
