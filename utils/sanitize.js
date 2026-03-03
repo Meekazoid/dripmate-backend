@@ -137,7 +137,7 @@ export function sanitizeCoffeeData(coffeeData) {
         origin: 200,
         cultivar: 200,
         roaster: 200,
-        roastery: 200,     // ← NEW: Rösterei field for card editor
+        roastery: 200,     // Ã¢â€ Â NEW: RÃƒÂ¶sterei field for card editor
         tastingNotes: 500
     };
     
@@ -217,6 +217,23 @@ export function sanitizeCoffeeData(coffeeData) {
                     }
                     if (typeof entry.resetToInitial === 'boolean') {
                         sanitizedEntry.resetToInitial = entry.resetToInitial;
+                    }
+                    // manualAdjust: 'grind' | 'temp'
+                    if (entry.manualAdjust === 'grind' || entry.manualAdjust === 'temp') {
+                        sanitizedEntry.manualAdjust = entry.manualAdjust;
+                    }
+                    // customTempApplied can be string (temp value) or boolean
+                    if (typeof entry.customTempApplied === 'string') {
+                        sanitizedEntry.customTempApplied = truncateString(stripHTML(entry.customTempApplied), 50);
+                    } else if (typeof entry.customTempApplied === 'boolean') {
+                        sanitizedEntry.customTempApplied = entry.customTempApplied;
+                    }
+                    // brewStart entries
+                    if (entry.brewStart === true) {
+                        sanitizedEntry.brewStart = true;
+                        if (typeof entry.brewLabel === 'string') {
+                            sanitizedEntry.brewLabel = truncateString(stripHTML(entry.brewLabel), 200);
+                        }
                     }
 
                     return sanitizedEntry;

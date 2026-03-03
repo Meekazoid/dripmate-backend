@@ -1,4 +1,4 @@
-﻿// ==========================================
+// ==========================================
 // COFFEE DATA ENDPOINTS
 // ==========================================
 
@@ -88,11 +88,25 @@ function normalizeFeedbackHistory(history) {
         if (typeof entry.grindOffsetDelta === 'number' && Number.isFinite(entry.grindOffsetDelta)) {
             normalizedEntry.grindOffsetDelta = entry.grindOffsetDelta;
         }
-        if (typeof entry.customTempApplied === 'boolean') {
+        // customTempApplied can be a string (e.g. '93-94C') or boolean
+        if (typeof entry.customTempApplied === 'string') {
+            normalizedEntry.customTempApplied = entry.customTempApplied.slice(0, 50);
+        } else if (typeof entry.customTempApplied === 'boolean') {
             normalizedEntry.customTempApplied = entry.customTempApplied;
         }
         if (typeof entry.resetToInitial === 'boolean') {
             normalizedEntry.resetToInitial = entry.resetToInitial;
+        }
+        // manualAdjust: 'grind' | 'temp'
+        if (entry.manualAdjust === 'grind' || entry.manualAdjust === 'temp') {
+            normalizedEntry.manualAdjust = entry.manualAdjust;
+        }
+        // brewStart entries
+        if (entry.brewStart === true) {
+            normalizedEntry.brewStart = true;
+            if (typeof entry.brewLabel === 'string') {
+                normalizedEntry.brewLabel = entry.brewLabel.slice(0, 200);
+            }
         }
 
         return normalizedEntry;
