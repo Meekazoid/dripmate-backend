@@ -630,7 +630,7 @@ export const queries = {
     async getMagicLinkToken(token) {
         const timeCheck = dbType === 'sqlite' ? "datetime('now')" : 'NOW()';
         return q('get',
-            "SELECT mlt.*, u.token as user_token FROM magic_link_tokens mlt JOIN users u ON u.id = mlt.user_id WHERE mlt.token = $1 AND mlt.used = 0 AND mlt.expires_at > " + timeCheck,
+            "SELECT mlt.*, u.token as user_token FROM magic_link_tokens mlt JOIN users u ON u.id = mlt.user_id WHERE mlt.token = $1 AND mlt.used = false AND mlt.expires_at > " + timeCheck,
             [token]
         );
     },
