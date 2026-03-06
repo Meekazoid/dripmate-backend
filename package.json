@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "dripmate-backend",
   "version": "1.0.0",
   "description": "dripmate backend API - Coffee brewing assistant with AI analysis",
@@ -26,7 +26,8 @@
     "dotenv": "^16.3.1",
     "uuid": "^9.0.1",
     "express-rate-limit": "^7.1.5",
-    "pg": "^8.11.3"
+    "pg": "^8.11.3",
+    "resend": "^3.2.0"
   },
   "optionalDependencies": {
     "sqlite3": "^5.1.7",
