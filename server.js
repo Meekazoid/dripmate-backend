@@ -1,5 +1,5 @@
 ﻿// ==========================================
-// DRIPMATE BACKEND SERVER V5.3 - Magic Link Recovery // deploy 17:40
+// DRIPMATE BACKEND SERVER V5.3 - Magic Link Recovery
 // + Grinder Variants + Method Preference
 // + Water Hardness + Card Editor PATCH
 // ==========================================
@@ -36,13 +36,11 @@ if (IS_PRODUCTION) {
 // ==========================================
 
 function validateEnvironment() {
-    // All vars the app will silently break without
     const required = [
         'ANTHROPIC_API_KEY',
         'RESEND_API_KEY',
     ];
 
-    // Only required when running in production
     const requiredInProduction = [
         'DATABASE_URL',
         'ALLOWED_ORIGINS',
@@ -71,26 +69,18 @@ validateEnvironment();
 // RATE LIMITING
 // ==========================================
 
-// General API limiter: 100 requests per 15 minutes
 const apiLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
-    message: {
-        success: false,
-        error: 'Too many requests, please try again later.'
-    },
+    message: { success: false, error: 'Too many requests, please try again later.' },
     standardHeaders: true,
     legacyHeaders: false,
 });
 
-// AI limiter: 10 requests per hour — applied only to the analyze endpoint
 const aiLimiter = rateLimit({
     windowMs: 60 * 60 * 1000,
     max: 10,
-    message: {
-        success: false,
-        error: 'AI analysis limit reached. Please try again in an hour.'
-    },
+    message: { success: false, error: 'AI analysis limit reached. Please try again in an hour.' },
     standardHeaders: true,
     legacyHeaders: false,
 });
@@ -115,9 +105,7 @@ if (!IS_PRODUCTION) {
 
 app.use(cors({
     origin: (origin, callback) => {
-        // Allow requests with no origin (e.g. curl, mobile apps, same-origin)
         if (!origin) return callback(null, true);
-
         if (allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
@@ -158,7 +146,7 @@ app.use('/api/user/method', methodRoutes);
 app.use('/api/user/water-hardness', waterHardnessRoutes);
 app.use('/api/coffees', coffeeRoutes);
 app.use('/api/brews', brewsRoutes);
-app.use('/api/analyze-coffee', aiLimiter, analyzeRoutes);  // AI limiter applied here
+app.use('/api/analyze-coffee', aiLimiter, analyzeRoutes);
 app.use('/api/health', healthRoutes);
 app.use('/api/admin', adminRouter);
 
@@ -167,19 +155,13 @@ app.use('/api/admin', adminRouter);
 // ==========================================
 
 app.use((req, res) => {
-    res.status(404).json({
-        success: false,
-        error: 'Endpoint not found'
-    });
+    res.status(404).json({ success: false, error: 'Endpoint not found' });
 });
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
     console.error('[ERROR] Unhandled server error:', err.message);
-    res.status(500).json({
-        success: false,
-        error: 'Internal server error'
-    });
+    res.status(500).json({ success: false, error: 'Internal server error' });
 });
 
 // ==========================================
@@ -187,7 +169,7 @@ app.use((err, req, res, next) => {
 // ==========================================
 
 app.listen(PORT, () => {
-    console.log(\[OK] Dripmate API v5.3 running on port \\);
+    console.log(`[OK] Dripmate API v5.3 running on port ${PORT}`);
     console.log(`[OK] Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`[OK] CORS enabled for: ${allowedOrigins.join(', ') || '(none)'}`);
     console.log(`[OK] Rate limiting active (general + AI)`);
