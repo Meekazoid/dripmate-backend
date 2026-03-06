@@ -244,6 +244,32 @@ async function runPostgreSQLMigrations() {
         );
     `);
     console.log('[DB] Whitelist & registrations tables ready');
+    // Step 8: Email column for magic link recovery
+    try {
+        await conn.pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT`);
+        await conn.pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email) WHERE email IS NOT NULL`);
+        console.log('[DB] users.email column ready');
+    } catch (err) {
+        console.log('[DB] Note: users.email may already exist');
+    }
+
+    // Step 9: Magic link tokens table
+    try {
+        await conn.pool.query(`
+            CREATE TABLE IF NOT EXISTS magic_link_tokens (
+                id         SERIAL PRIMARY KEY,
+                user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                token      TEXT NOT NULL UNIQUE,
+                expires_at TIMESTAMP NOT NULL,
+                used       BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        await conn.pool.query(`CREATE INDEX IF NOT EXISTS idx_magic_tokens_token ON magic_link_tokens(token)`);
+        console.log('[DB] magic_link_tokens table ready');
+    } catch (err) {
+        console.log('[DB] Note: magic_link_tokens may already exist');
+    }
 }
 
 // ==========================================
@@ -341,6 +367,21 @@ async function runSQLiteMigrations() {
         );
     `);
     console.log('[DB] Whitelist & registrations tables ready');
+    // Step 8: Email column for magic link recovery
+    try {
+        await conn.run("ALTER TABLE users ADD COLUMN email TEXT").catch(() => {});
+    } catch (err) {
+        // column already exists - ignore
+    }
+
+    // Step 9: Magic link tokens table
+    try {
+        await conn.exec(`CREATE TABLE IF NOT EXISTS magic_link_tokens (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, token TEXT NOT NULL UNIQUE, expires_at DATETIME NOT NULL, used INTEGER DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
+        await conn.run(`CREATE INDEX IF NOT EXISTS idx_magic_tokens_token ON magic_link_tokens(token)`).catch(() => {});
+        console.log('[DB] magic_link_tokens table ready');
+    } catch (_) {
+        // already exists
+    }
 }
 
 // ==========================================
@@ -412,7 +453,7 @@ export const queries = {
 
     async getUserByToken(token, deviceId = null) {
         const sql = `
-            SELECT id, username, device_id, grinder_preference, method_preference, water_hardness, created_at
+            SELECT id, username, email, device_id, grinder_preference, method_preference, water_hardness, created_at
             FROM users
             WHERE token = $1
             ${deviceId ? 'AND device_id = $2' : ''}
@@ -570,6 +611,38 @@ export const queries = {
         } else {
             return q('run', `UPDATE registrations SET used = 1 WHERE token = $1`, [token]);
         }
+    },
+
+    // ---- Email & Magic Link Recovery ----
+
+    async setUserEmail(userId, email) {
+        return q('run', 'UPDATE users SET email = $1 WHERE id = $2', [email.toLowerCase().trim(), userId]);
+    },
+
+    async getUserByEmail(email) {
+        return q('get', 'SELECT * FROM users WHERE email = $1', [email.toLowerCase().trim()]);
+    },
+
+    async createMagicLinkToken(userId, token, expiresAt) {
+        return q('run', 'INSERT INTO magic_link_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)', [userId, token, expiresAt]);
+    },
+
+    async getMagicLinkToken(token) {
+        return q('get',
+            'SELECT mlt.*, u.token as user_token FROM magic_link_tokens mlt JOIN users u ON u.id = mlt.user_id WHERE mlt.token = $1 AND mlt.used = false AND mlt.expires_at > NOW()',
+            [token]
+        );
+    },
+
+    async markMagicLinkUsed(token) {
+        return q('run', 'UPDATE magic_link_tokens SET used = true WHERE token = $1', [token]);
+    },
+
+    async rebindDevice(userId, deviceId, deviceInfo) {
+        return q('run',
+            'UPDATE users SET device_id = $1, device_info = $2, last_login_at = CURRENT_TIMESTAMP WHERE id = $3',
+            [deviceId, deviceInfo, userId]
+        );
     },
 
     async isEmailWhitelisted(email) {
