@@ -1,5 +1,5 @@
-// ==========================================
-// HEALTH CHECK (V5.2)
+﻿// ==========================================
+// HEALTH CHECK (V5.3)
 // ==========================================
 
 import express from 'express';
@@ -10,7 +10,7 @@ router.get('/', (req, res) => {
     res.json({ 
         status: 'ok',
         app: 'dripmate',
-        version: '5.2.0-grinder-variants',
+        version: '5.3.0-magic-link',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         environment: process.env.NODE_ENV || 'development'

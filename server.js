@@ -1,5 +1,5 @@
 ﻿// ==========================================
-// DRIPMATE BACKEND SERVER V5.2
+// DRIPMATE BACKEND SERVER V5.3 - Magic Link Recovery
 // + Grinder Variants + Method Preference
 // + Water Hardness + Card Editor PATCH
 // ==========================================
@@ -187,7 +187,7 @@ app.use((err, req, res, next) => {
 // ==========================================
 
 app.listen(PORT, () => {
-    console.log(`[OK] Dripmate API v5.2 running on port ${PORT}`);
+    console.log(\[OK] Dripmate API v5.3 running on port \\);
     console.log(`[OK] Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`[OK] CORS enabled for: ${allowedOrigins.join(', ') || '(none)'}`);
     console.log(`[OK] Rate limiting active (general + AI)`);
