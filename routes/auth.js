@@ -142,7 +142,7 @@ router.post('/magic-link', async (req, res) => {
         // Rate limit: max 1 mail per 60 seconds
         const recentToken = await queries.getRecentMagicLinkToken(user.id, 60);
         if (recentToken) {
-            console.log([INFO] Magic link rate limited for user ${user.username});
+            console.log('[INFO] Magic link rate limited for user ' + user.username);
             return res.json({ success: true, message: 'If that email is registered, a link has been sent.' });
         }
 
