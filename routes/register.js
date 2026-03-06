@@ -109,18 +109,6 @@ router.post('/', async (req, res) => {
         const existing = await queries.getRegistrationByEmail(normalizedEmail);
         if (existing) {
             await sendTokenMail(normalizedEmail, existing.token);
-
-            // Ensure users.email is set if user already activated their token
-            const existingUser = await queries.getUserByEmail(normalizedEmail).catch(() => null);
-            if (!existingUser) {
-                // User may exist by token - sync email if missing
-                const userByToken = await queries.getUserByToken(existing.token).catch(() => null);
-                if (userByToken && !userByToken.email) {
-                    await queries.setUserEmail(userByToken.id, normalizedEmail).catch(() => {});
-                    console.log(`[OK] Email synced for existing user ${userByToken.username}`);
-                }
-            }
-
             console.log(`[OK] Token re-sent: ${normalizedEmail}`);
             return res.json({ success: true, resent: true });
         }
