@@ -638,6 +638,10 @@ export const queries = {
     async markMagicLinkUsed(token) {
         return q('run', 'UPDATE magic_link_tokens SET used = true WHERE token = $1', [token]);
     },
+    async getRecentMagicLinkToken(userId, seconds) {
+        const cutoff = new Date(Date.now() - seconds * 1000).toISOString();
+        return q('get', 'SELECT id FROM magic_link_tokens WHERE user_id = $1 AND created_at > $2 ORDER BY created_at DESC LIMIT 1', [userId, cutoff]);
+    },
 
     async rebindDevice(userId, deviceId, deviceInfo) {
         return q('run',

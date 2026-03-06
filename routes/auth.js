@@ -139,6 +139,13 @@ router.post('/magic-link', async (req, res) => {
         const magicToken = crypto.randomBytes(32).toString('hex');
         const expiresAt  = new Date(Date.now() + 15 * 60 * 1000); // 15 min
 
+        // Rate limit: max 1 mail per 60 seconds
+        const recentToken = await queries.getRecentMagicLinkToken(user.id, 60);
+        if (recentToken) {
+            console.log([INFO] Magic link rate limited for user ${user.username});
+            return res.json({ success: true, message: 'If that email is registered, a link has been sent.' });
+        }
+
         await queries.createMagicLinkToken(user.id, magicToken, expiresAt);
 
         const appUrl  = process.env.FRONTEND_URL || 'https://dripmate.app';
