@@ -154,22 +154,87 @@ router.post('/magic-link', async (req, res) => {
         await resend.emails.send({
             from:    'dripmate <hello@dripmate.app>',
             to:      email,
-            subject: 'dripmate · Dein Login-Link',
+            subject: 'Your dripmate login link',
             html: `
-                <div style="font-family: 'Helvetica Neue', sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 24px; background: #fdf8f2; color: #1a1008;">
-                    <p style="font-size: 22px; font-style: italic; color: #8b6f47; margin: 0 0 24px;">drip·mate</p>
-                    <h2 style="font-size: 18px; font-weight: 600; margin: 0 0 12px;">Dein Login-Link</h2>
-                    <p style="font-size: 14px; color: #7a6050; margin: 0 0 28px; line-height: 1.6;">
-                        Klick auf den Button um dich einzuloggen und deine Kaffees wiederherzustellen.<br>
-                        Der Link ist <strong>15 Minuten</strong> gültig.
-                    </p>
-                    <a href="${link}" style="display: inline-block; background: #8b6f47; color: #fff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-size: 15px; font-weight: 600;">
-                        Jetzt einloggen →
-                    </a>
-                    <p style="font-size: 12px; color: #b0a090; margin-top: 32px;">
-                        Falls du diesen Link nicht angefordert hast, ignoriere diese E-Mail einfach.
-                    </p>
-                </div>
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                </head>
+                <body style="margin:0;padding:0;background:#f5f5f0;font-family:'Helvetica Neue',Arial,sans-serif;">
+                    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f0;padding:48px 20px;">
+                        <tr>
+                            <td align="center">
+                                <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
+
+                                    <tr>
+                                        <td style="padding-bottom:24px;text-align:left;">
+                                            <p style="margin:0 0 3px;font-size:1.3rem;font-weight:200;letter-spacing:0.32em;color:#000000;line-height:1;">
+                                                drip&middot;mate
+                                            </p>
+                                            <p style="margin:0;font-size:0.58rem;font-weight:300;letter-spacing:0.22em;text-transform:uppercase;color:#8b6f47;opacity:0.8;">
+                                                Precision meets Ritual.
+                                            </p>
+                                        </td>
+                                    </tr>
+
+                                    <tr>
+                                        <td style="background:#ffffff;border:1px solid #e0e0e0;border-radius:20px;padding:36px 32px;">
+                                            <p style="margin:0 0 6px;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.2em;color:#bbbbbb;font-weight:400;">
+                                                Secure Login
+                                            </p>
+
+                                            <p style="margin:0 0 6px;font-size:1.05rem;font-weight:400;color:#1a1a1a;line-height:1.4;">
+                                                Your login link is ready.
+                                            </p>
+                                            <p style="margin:0 0 8px;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.2em;color:#bbbbbb;font-weight:400;">
+                                                One-time access · 15 minutes
+                                            </p>
+
+                                            <p style="margin:0 0 24px;font-size:0.88rem;color:#555555;line-height:1.75;font-weight:300;">
+                                                Click the button below to securely sign in and restore your coffees.
+                                                For your security, this link can only be used once and expires after 15 minutes.
+                                            </p>
+
+                                            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+                                                <tr>
+                                                    <td align="center">
+                                                        <a href="${link}"
+                                                           style="display:inline-block;background:#8b6f47;color:#ffffff;text-decoration:none;padding:14px 40px;border-radius:10px;font-size:0.9rem;font-weight:600;letter-spacing:0.04em;">
+                                                            Sign in to drip&middot;mate
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            </table>
+
+                                            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+                                                <tr>
+                                                    <td style="border-top:1px solid #eeeeee;"></td>
+                                                </tr>
+                                            </table>
+
+                                            <p style="margin:0 0 20px;font-size:0.8rem;color:#999999;line-height:1.7;font-weight:300;">
+                                                If you did not request this email, you can safely ignore it.
+                                            </p>
+
+                                            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+                                                <tr>
+                                                    <td style="border-top:1px solid #eeeeee;"></td>
+                                                </tr>
+                                            </table>
+
+                                            <p style="margin:0;font-size:0.88rem;color:#555555;font-weight:300;">
+                                                Happy Brewing! &#x2615;
+                                            </p>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </body>
+                </html>
             `
         });
 
