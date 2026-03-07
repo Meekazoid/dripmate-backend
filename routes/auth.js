@@ -196,14 +196,21 @@ router.get('/magic-link/redeem', async (req, res) => {
 
         const record = await queries.getMagicLinkToken(magic);
 
-        if (!record) {
-            return res.status(401).json({ success: false, error: 'Link invalid or expired' });
+        // Recovery flow: one-time token with 15 min TTL
+        if (record) {
+            await queries.markMagicLinkUsed(magic);
+            console.log(`[OK] Magic link redeemed for user_id ${record.user_id}`);
+            return res.json({ success: true, token: record.user_token });
         }
 
-        await queries.markMagicLinkUsed(magic);
+        // Registration compatibility: accept legacy token-only links mirrored as magic=<token>
+        const registration = await queries.getRegistrationByToken(magic);
+        if (registration) {
+            console.log(`[OK] Registration token redeemed via /magic-link/redeem: ${registration.email}`);
+            return res.json({ success: true, token: registration.token });
+        }
 
-        console.log(`[OK] Magic link redeemed for user_id ${record.user_id}`);
-        res.json({ success: true, token: record.user_token });
+        return res.status(401).json({ success: false, error: 'Link invalid or expired' });
 
     } catch (error) {
         console.error('[ERROR] /auth/magic-link/redeem:', error.message);
