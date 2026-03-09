@@ -278,13 +278,6 @@ router.get('/magic-link/redeem', async (req, res) => {
             return res.json({ success: true, token: record.user_token });
         }
 
-        // Registration compatibility: allow magic-only frontend bootstrap
-        // with existing register tokens (returned as validate token)
-        const registration = await queries.getRegistrationByToken(magic);
-        if (registration) {
-            return res.json({ success: true, token: magic });
-        }
-
         return res.status(401).json({ success: false, error: 'Link invalid or expired' });
 
     } catch (error) {
