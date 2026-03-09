@@ -9,7 +9,11 @@ import { extractAuthCredentials, getDeviceInfo } from '../middleware/auth.js';
 import { queries } from '../db/database.js';
 
 const router = express.Router();
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResendClient() {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) return null;
+    return new Resend(apiKey);
+}
 
 /**
  * Validate Token
@@ -150,6 +154,12 @@ router.post('/magic-link', async (req, res) => {
 
         const appUrl  = process.env.FRONTEND_URL || 'https://dripmate.app';
         const link    = `${appUrl}/?magic=${magicToken}`;
+
+        const resend = getResendClient();
+        if (!resend) {
+            console.error('[ERROR] RESEND_API_KEY missing for /auth/magic-link');
+            return res.status(503).json({ success: false, error: 'Email service unavailable' });
+        }
 
         await resend.emails.send({
             from:    'dripmate <hello@dripmate.app>',
