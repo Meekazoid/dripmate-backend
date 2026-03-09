@@ -149,7 +149,7 @@ router.post('/magic-link', async (req, res) => {
         await queries.createMagicLinkToken(user.id, magicToken, expiresAt);
 
         const appUrl  = process.env.FRONTEND_URL || 'https://dripmate.app';
-        const link    = `${appUrl}/?token=${user.token}&magic=${magicToken}`;
+        const link    = `${appUrl}/?magic=${magicToken}`;
 
         await resend.emails.send({
             from:    'dripmate <hello@dripmate.app>',
@@ -266,13 +266,6 @@ router.get('/magic-link/redeem', async (req, res) => {
             await queries.markMagicLinkUsed(magic);
             console.log(`[OK] Magic link redeemed for user_id ${record.user_id}`);
             return res.json({ success: true, token: record.user_token });
-        }
-
-        // Registration compatibility: accept legacy token-only links mirrored as magic=<token>
-        const registration = await queries.getRegistrationByToken(magic);
-        if (registration) {
-            console.log(`[OK] Registration token redeemed via /magic-link/redeem: ${registration.email}`);
-            return res.json({ success: true, token: registration.token });
         }
 
         return res.status(401).json({ success: false, error: 'Link invalid or expired' });

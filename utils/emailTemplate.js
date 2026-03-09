@@ -11,11 +11,8 @@
  * @param {string} frontendUrl - Base URL of the frontend app (from FRONTEND_URL env var)
  * @returns {string} Full HTML string ready to send via Resend
  */
-export function buildTokenEmail(email, token, frontendUrl, magic = null) {
-    const query = magic
-        ? `token=${encodeURIComponent(token)}&magic=${encodeURIComponent(magic)}`
-        : `token=${encodeURIComponent(token)}`;
-    const magicLink = `${frontendUrl}/?${query}`;
+export function buildTokenEmail(email, token, frontendUrl) {
+    const magicLink = `${frontendUrl}/?token=${encodeURIComponent(token)}`;
 
     return `
         <!DOCTYPE html>
