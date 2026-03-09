@@ -153,12 +153,12 @@ router.post('/magic-link', async (req, res) => {
         await queries.createMagicLinkToken(user.id, magicToken, expiresAt);
 
         const appUrl  = process.env.FRONTEND_URL || 'https://dripmate.app';
-        const link    = `${appUrl}/?magic=${magicToken}`;
+        const link    = `${appUrl}/?magic=${encodeURIComponent(magicToken)}`;
 
         const resend = getResendClient();
         if (!resend) {
             console.error('[ERROR] RESEND_API_KEY missing for /auth/magic-link');
-            return res.status(503).json({ success: false, error: 'Email service unavailable' });
+            return res.status(503).json({ success: false, error: 'Email service temporarily unavailable' });
         }
 
         await resend.emails.send({
@@ -276,6 +276,13 @@ router.get('/magic-link/redeem', async (req, res) => {
             await queries.markMagicLinkUsed(magic);
             console.log(`[OK] Magic link redeemed for user_id ${record.user_id}`);
             return res.json({ success: true, token: record.user_token });
+        }
+
+        // Registration compatibility: allow magic-only frontend bootstrap
+        // with existing register tokens (returned as validate token)
+        const registration = await queries.getRegistrationByToken(magic);
+        if (registration) {
+            return res.json({ success: true, token: magic });
         }
 
         return res.status(401).json({ success: false, error: 'Link invalid or expired' });
