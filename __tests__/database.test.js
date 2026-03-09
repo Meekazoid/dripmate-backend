@@ -122,4 +122,25 @@ describe('Database Module', () => {
             expect(coffees.length).toBe(0);
         });
     });
+
+    describe('AI Scan Usage Quota', () => {
+        let quotaUserId;
+
+        beforeAll(async () => {
+            quotaUserId = await queries.createUser('quotauser_' + Date.now(), 'quota-token-' + Date.now());
+        });
+
+        test('should default successful scans today to 0', async () => {
+            const count = await queries.getSuccessfulScansToday(quotaUserId);
+            expect(count).toBe(0);
+        });
+
+        test('should increment successful scans today', async () => {
+            await queries.incrementSuccessfulScansToday(quotaUserId);
+            await queries.incrementSuccessfulScansToday(quotaUserId);
+            const count = await queries.getSuccessfulScansToday(quotaUserId);
+            expect(count).toBe(2);
+        });
+    });
+
 });

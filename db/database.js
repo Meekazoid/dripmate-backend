@@ -270,6 +270,26 @@ async function runPostgreSQLMigrations() {
     } catch (err) {
         console.log('[DB] Note: magic_link_tokens may already exist');
     }
+
+
+    // Step 10: Per-user successful AI scan usage (daily quota)
+    try {
+        await conn.pool.query(`
+            CREATE TABLE IF NOT EXISTS ai_scan_usage_daily (
+                id            SERIAL PRIMARY KEY,
+                user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                usage_date    DATE NOT NULL,
+                success_count INTEGER NOT NULL DEFAULT 0,
+                created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, usage_date)
+            )
+        `);
+        await conn.pool.query(`CREATE INDEX IF NOT EXISTS idx_ai_scan_usage_user_date ON ai_scan_usage_daily(user_id, usage_date)`);
+        console.log('[DB] ai_scan_usage_daily table ready');
+    } catch (err) {
+        console.log('[DB] Note: ai_scan_usage_daily may already exist');
+    }
 }
 
 // ==========================================
@@ -379,6 +399,26 @@ async function runSQLiteMigrations() {
         await conn.exec(`CREATE TABLE IF NOT EXISTS magic_link_tokens (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, token TEXT NOT NULL UNIQUE, expires_at DATETIME NOT NULL, used INTEGER DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)`);
         await conn.run(`CREATE INDEX IF NOT EXISTS idx_magic_tokens_token ON magic_link_tokens(token)`).catch(() => {});
         console.log('[DB] magic_link_tokens table ready');
+    } catch (_) {
+        // already exists
+    }
+
+
+    // Step 10: Per-user successful AI scan usage (daily quota)
+    try {
+        await conn.exec(`
+            CREATE TABLE IF NOT EXISTS ai_scan_usage_daily (
+                id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                usage_date    TEXT NOT NULL,
+                success_count INTEGER NOT NULL DEFAULT 0,
+                created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, usage_date)
+            )
+        `);
+        await conn.run(`CREATE INDEX IF NOT EXISTS idx_ai_scan_usage_user_date ON ai_scan_usage_daily(user_id, usage_date)`).catch(() => {});
+        console.log('[DB] ai_scan_usage_daily table ready');
     } catch (_) {
         // already exists
     }
@@ -641,6 +681,39 @@ export const queries = {
     async getRecentMagicLinkToken(userId, seconds) {
         const cutoff = new Date(Date.now() - seconds * 1000).toISOString();
         return q('get', 'SELECT id FROM magic_link_tokens WHERE user_id = $1 AND created_at > $2 ORDER BY created_at DESC LIMIT 1', [userId, cutoff]);
+    },
+
+    async getSuccessfulScansToday(userId) {
+        const row = await q('get',
+            "SELECT success_count FROM ai_scan_usage_daily WHERE user_id = $1 AND usage_date = " + (dbType === 'sqlite' ? "date('now')" : 'CURRENT_DATE'),
+            [userId]
+        );
+        return row?.success_count || 0;
+    },
+
+    async incrementSuccessfulScansToday(userId) {
+        if (dbType === 'postgresql') {
+            await q('run',
+                `INSERT INTO ai_scan_usage_daily (user_id, usage_date, success_count, updated_at)
+                 VALUES ($1, CURRENT_DATE, 1, CURRENT_TIMESTAMP)
+                 ON CONFLICT (user_id, usage_date)
+                 DO UPDATE SET
+                   success_count = ai_scan_usage_daily.success_count + 1,
+                   updated_at = CURRENT_TIMESTAMP`,
+                [userId]
+            );
+            return;
+        }
+
+        await q('run',
+            `INSERT INTO ai_scan_usage_daily (user_id, usage_date, success_count, updated_at)
+             VALUES ($1, date('now'), 1, CURRENT_TIMESTAMP)
+             ON CONFLICT(user_id, usage_date)
+             DO UPDATE SET
+               success_count = success_count + 1,
+               updated_at = CURRENT_TIMESTAMP`,
+            [userId]
+        );
     },
 
     async rebindDevice(userId, deviceId, deviceInfo) {

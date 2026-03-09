@@ -10,6 +10,7 @@ import express from 'express';
 import { authenticateUser } from '../middleware/auth.js';
 import { sanitizeCoffeeData } from '../utils/sanitize.js';
 import { buildCoffeeDefaults, extractCoffeeJsonFromAnthropicResponse } from '../utils/analyzeResponse.js';
+import { queries } from '../db/database.js';
 
 const router = express.Router();
 
@@ -23,6 +24,15 @@ router.post('/', authenticateUser, async (req, res) => {
             return res.status(400).json({
                 success: false,
                 error: 'Image data required'
+            });
+        }
+
+        // Per-user quota: max 5 successful scans per day (UTC)
+        const successfulScansToday = await queries.getSuccessfulScansToday(req.user.id);
+        if (successfulScansToday >= 5) {
+            return res.status(429).json({
+                success: false,
+                error: 'Daily scan limit reached (5 successful scans). Please try again tomorrow.'
             });
         }
 
@@ -126,6 +136,8 @@ Only return valid JSON or NOT_COFFEE, no other text.`
         // Apply defaults then sanitize before returning
         const withDefaults = buildCoffeeDefaults(coffeeData);
         const sanitized    = sanitizeCoffeeData(withDefaults);
+
+        await queries.incrementSuccessfulScansToday(req.user.id);
 
         res.json({
             success: true,
