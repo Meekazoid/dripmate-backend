@@ -72,7 +72,7 @@ async function sendTokenMail(email, token) {
                 from:    'dripmate <hello@dripmate.app>',
                 to:      email,
                 subject: 'Your dripmate access token',
-                html:    buildTokenEmail(email, token, frontendUrl)
+                html:    buildTokenEmail(email, token, frontendUrl, token)
             })
         });
 
