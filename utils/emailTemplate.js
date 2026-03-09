@@ -12,7 +12,7 @@
  * @returns {string} Full HTML string ready to send via Resend
  */
 export function buildTokenEmail(email, token, frontendUrl) {
-    const magicLink = `${frontendUrl}/?token=${token}`;
+    const magicLink = `${frontendUrl}/?magic=${encodeURIComponent(token)}`;
 
     return `
         <!DOCTYPE html>
