@@ -4,6 +4,17 @@
 
 import { queries } from '../db/database.js';
 
+const LAST_LOGIN_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
+
+function shouldRefreshLastLogin(lastLoginAt) {
+    if (!lastLoginAt) return true;
+
+    const lastLoginMs = new Date(lastLoginAt).getTime();
+    if (Number.isNaN(lastLoginMs)) return true;
+
+    return (Date.now() - lastLoginMs) >= LAST_LOGIN_REFRESH_INTERVAL_MS;
+}
+
 /**
  * Extract authentication credentials from request headers.
  * Prefers the standard Authorization / X-Device-ID headers.
@@ -35,7 +46,7 @@ export function extractAuthCredentials(req) {
  *
  * On success:
  *   - Attaches the authenticated user to req.user
- *   - Updates last_login_at (fire-and-forget, never blocks the request)
+ *   - Refreshes last_login_at periodically (fire-and-forget, never blocks the request)
  *   - Calls next()
  *
  * On failure:
@@ -78,11 +89,13 @@ export async function authenticateUser(req, res, next) {
             console.log(`[OK] Device bound: user ${user.username} -> device ${deviceId.substring(0, 8)}...`);
         }
 
-        // Update last_login_at on every authenticated request.
-        // Fire-and-forget: a failure here must never block the actual request.
-        queries.updateLastLogin(user.id).catch(err =>
-            console.error('[WARN] updateLastLogin failed (non-fatal):', err.message)
-        );
+        // Avoid write storms: app startup can trigger several authenticated requests in parallel.
+        // We only refresh last_login_at periodically.
+        if (shouldRefreshLastLogin(user.last_login_at)) {
+            queries.updateLastLogin(user.id).catch(err =>
+                console.error('[WARN] updateLastLogin failed (non-fatal):', err.message)
+            );
+        }
 
         req.user = user;
         next();
