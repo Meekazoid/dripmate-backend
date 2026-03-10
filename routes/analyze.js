@@ -29,6 +29,7 @@ router.post('/', authenticateUser, async (req, res) => {
 
         // Per-user quota: max 5 successful scans per day (UTC)
         const successfulScansToday = await queries.getSuccessfulScansToday(req.user.id);
+        console.log(`[DB] Successful scans today: user_id=${req.user.id}, count=${successfulScansToday}`);
         if (successfulScansToday >= 5) {
             return res.status(429).json({
                 success: false,
@@ -138,6 +139,8 @@ Only return valid JSON or NOT_COFFEE, no other text.`
         const sanitized    = sanitizeCoffeeData(withDefaults);
 
         await queries.incrementSuccessfulScansToday(req.user.id);
+        const successfulScansAfterIncrement = await queries.getSuccessfulScansToday(req.user.id);
+        console.log(`[DB] Successful scans updated: user_id=${req.user.id}, count=${successfulScansAfterIncrement}`);
 
         res.json({
             success: true,
