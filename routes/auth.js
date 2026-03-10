@@ -66,7 +66,12 @@ router.get('/validate', async (req, res) => {
             console.log(`[OK] Device bound: user ${user.username} -> device ${deviceId.substring(0, 8)}...`);
         }
 
-        await queries.updateLastLogin(user.id);
+        // Do not block login validation on this non-critical write.
+        // On production Postgres (especially free/shared tiers), a synchronous
+        // UPDATE here can add visible startup latency in the app before coffees load.
+        queries.updateLastLogin(user.id).catch(err =>
+            console.error('[WARN] updateLastLogin failed (non-fatal):', err.message)
+        );
 
         res.json({
             success: true,
