@@ -139,8 +139,12 @@ Only return valid JSON or NOT_COFFEE, no other text.`
         const sanitized    = sanitizeCoffeeData(withDefaults);
 
         await queries.incrementSuccessfulScansToday(req.user.id);
-        const successfulScansAfterIncrement = await queries.getSuccessfulScansToday(req.user.id);
-        console.log(`[DB] Successful scans updated: user_id=${req.user.id}, count=${successfulScansAfterIncrement}`);
+        try {
+            const successfulScansAfterIncrement = await queries.getSuccessfulScansToday(req.user.id);
+            console.log(`[DB] Successful scans updated: user_id=${req.user.id}, count=${successfulScansAfterIncrement}`);
+        } catch (logReadError) {
+            console.warn(`[DB] Post-increment scan count read failed: user_id=${req.user.id}, error=${logReadError.message}`);
+        }
 
         res.json({
             success: true,
