@@ -79,6 +79,7 @@ curl "https://your-backend.railway.app/api/auth/validate?token=YOUR_TOKEN&device
 {
   "success": true,
   "valid": true,
+  "isFirstLogin": false,
   "user": {
     "id": 1,
     "username": "johndoe",
