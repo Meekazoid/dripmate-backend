@@ -31,9 +31,10 @@ router.post('/', authenticateUser, async (req, res) => {
         const successfulScansToday = await queries.getSuccessfulScansToday(req.user.id);
         console.log(`[DB] Successful scans today: user_id=${req.user.id}, count=${successfulScansToday}`);
         if (successfulScansToday >= 5) {
-            return res.status(429).json({
+            return res.status(403).json({
                 success: false,
-                error: "You've reached your daily limit of 5 successful scans. Please try again tomorrow after the daily reset."
+                error: "You've reached your daily limit of 5 successful scans. Please try again tomorrow after the daily reset.",
+                errorCode: 'DAILY_SCAN_LIMIT_REACHED'
             });
         }
 
