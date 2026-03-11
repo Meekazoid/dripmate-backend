@@ -26,6 +26,7 @@ function getResendClient() {
 router.get('/validate', async (req, res) => {
     try {
         const { token, deviceId } = extractAuthCredentials(req);
+        let isFirstLogin = false;
 
         if (!token)    return res.status(400).json({ success: false, error: 'Token required' });
         if (!deviceId) return res.status(400).json({ success: false, error: 'Device ID required' });
@@ -54,6 +55,7 @@ router.get('/validate', async (req, res) => {
 
             console.log(`[OK] New user created: ${username} (${registration.email})`);
             user = await queries.getUserByToken(token);
+            isFirstLogin = true;
         }
 
         // Device changed (e.g. browser reset) — rebind silently
@@ -76,6 +78,7 @@ router.get('/validate', async (req, res) => {
         res.json({
             success: true,
             valid:   true,
+            isFirstLogin,
             user: {
                 id:                user.id,
                 username:          user.username,
