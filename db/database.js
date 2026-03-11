@@ -78,6 +78,11 @@ export async function initDatabase() {
         try {
             await pool.query('SELECT NOW()');
             console.log('[DB] PostgreSQL connection successful');
+
+            const dbInfo = await pool.query('SELECT current_database() AS database, current_schema() AS schema');
+            if (dbInfo.rows[0]) {
+                console.log(`[DB] Connected DB context: database=${dbInfo.rows[0].database}, schema=${dbInfo.rows[0].schema}`);
+            }
         } catch (err) {
             console.error('[DB] PostgreSQL connection failed:', err.message);
             throw err;
