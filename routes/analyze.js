@@ -33,7 +33,7 @@ router.post('/', authenticateUser, async (req, res) => {
         if (successfulScansToday >= 5) {
             return res.status(429).json({
                 success: false,
-                error: 'Daily scan limit reached (5 successful scans). Please try again tomorrow.'
+                error: "You've reached your daily limit of 5 successful scans. Please try again tomorrow after the daily reset."
             });
         }
 
@@ -139,8 +139,12 @@ Only return valid JSON or NOT_COFFEE, no other text.`
         const sanitized    = sanitizeCoffeeData(withDefaults);
 
         await queries.incrementSuccessfulScansToday(req.user.id);
-        const successfulScansAfterIncrement = await queries.getSuccessfulScansToday(req.user.id);
-        console.log(`[DB] Successful scans updated: user_id=${req.user.id}, count=${successfulScansAfterIncrement}`);
+        try {
+            const successfulScansAfterIncrement = await queries.getSuccessfulScansToday(req.user.id);
+            console.log(`[DB] Successful scans updated: user_id=${req.user.id}, count=${successfulScansAfterIncrement}`);
+        } catch (logReadError) {
+            console.warn(`[DB] Post-increment scan count read failed: user_id=${req.user.id}, error=${logReadError.message}`);
+        }
 
         res.json({
             success: true,
