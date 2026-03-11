@@ -9,6 +9,41 @@ import { extractAuthCredentials, getDeviceInfo } from '../middleware/auth.js';
 import { queries } from '../db/database.js';
 
 const router = express.Router();
+
+/**
+ * Redeem any magic-style login parameter and resolve the actual bearer token.
+ *
+ * Supports:
+ * 1) One-time recovery magic tokens from magic_link_tokens (preferred)
+ * 2) Existing user bearer tokens (compatibility bridge)
+ * 3) Pending registration tokens BREW-XXXXXX (compatibility bridge)
+ *
+ * @param {string} magic
+ * @returns {Promise<string|null>} bearer token when valid, else null
+ */
+export async function resolveMagicToBearerToken(magic) {
+    const record = await queries.getMagicLinkToken(magic);
+    if (record) {
+        await queries.markMagicLinkUsed(magic);
+        console.log(`[OK] Magic link redeemed for user_id ${record.user_id}`);
+        return record.user_token;
+    }
+
+    const existingUser = await queries.getUserByToken(magic);
+    if (existingUser) {
+        console.log(`[OK] Legacy magic param accepted for existing user ${existingUser.username}`);
+        return existingUser.token;
+    }
+
+    const registration = await queries.getRegistrationByToken(magic);
+    if (registration) {
+        console.log(`[OK] Legacy magic param accepted for registration ${registration.email}`);
+        return registration.token;
+    }
+
+    return null;
+}
+
 function getResendClient() {
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) return null;
@@ -277,13 +312,10 @@ router.get('/magic-link/redeem', async (req, res) => {
         const { magic } = req.query;
         if (!magic) return res.status(400).json({ success: false, error: 'Magic token required' });
 
-        const record = await queries.getMagicLinkToken(magic);
+        const token = await resolveMagicToBearerToken(magic);
 
-        // Recovery flow: one-time token with 15 min TTL
-        if (record) {
-            await queries.markMagicLinkUsed(magic);
-            console.log(`[OK] Magic link redeemed for user_id ${record.user_id}`);
-            return res.json({ success: true, token: record.user_token });
+        if (token) {
+            return res.json({ success: true, token });
         }
 
         return res.status(401).json({ success: false, error: 'Link invalid or expired' });
