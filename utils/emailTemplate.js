@@ -12,7 +12,7 @@
  * @returns {string} Full HTML string ready to send via Resend
  */
 export function buildTokenEmail(email, token, frontendUrl) {
-    const magicLink = `${frontendUrl}/?magic=${encodeURIComponent(token)}`;
+    const loginLink = `${frontendUrl}/?magic=${encodeURIComponent(token)}`;
 
     return `
         <!DOCTYPE html>
@@ -67,7 +67,7 @@ export function buildTokenEmail(email, token, frontendUrl) {
                                     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
                                         <tr>
                                             <td align="center">
-                                                <a href="${magicLink}"
+                                                <a href="${loginLink}"
                                                    style="display:inline-block;background:#8b6f47;color:#ffffff;text-decoration:none;padding:14px 40px;border-radius:10px;font-size:0.9rem;font-weight:600;letter-spacing:0.04em;">
                                                     Enter drip&middot;mate
                                                 </a>
