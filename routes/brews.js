@@ -26,7 +26,7 @@ router.patch('/:id', authenticateUser, async (req, res) => {
         const updates = req.body;
 
         // Only allow specific fields to be patched
-        const allowedFields    = ['coffee_name', 'origin', 'roastery'];
+        const allowedFields    = ['coffee_name', 'origin', 'roastery', 'colorTag'];
         const sanitizedUpdates = {};
 
         for (const field of allowedFields) {
@@ -82,6 +82,7 @@ router.patch('/:id', authenticateUser, async (req, res) => {
         if (sanitizedUpdates.coffee_name !== undefined) coffee.name     = sanitizedUpdates.coffee_name;
         if (sanitizedUpdates.origin      !== undefined) coffee.origin   = sanitizedUpdates.origin;
         if (sanitizedUpdates.roastery    !== undefined) coffee.roastery = sanitizedUpdates.roastery;
+        if (sanitizedUpdates.colorTag    !== undefined) coffee.colorTag = sanitizedUpdates.colorTag;
 
         // Atomically rewrite the full coffee array
         await beginTransaction();
