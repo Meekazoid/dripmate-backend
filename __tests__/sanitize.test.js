@@ -143,7 +143,7 @@ describe('Sanitization Utilities', () => {
             expect(result.name).toBe('Evil Coffee');
             expect(result.origin).toBe('Ethiopia');
             expect(result.cultivar).toBe('Heirloom');
-            expect(result.roaster).toBe('Roaster');
+            expect(result.roastery).toBe('Roaster');
             expect(result.tastingNotes).toBe('Fruity and sweet');
         });
 
@@ -161,7 +161,7 @@ describe('Sanitization Utilities', () => {
             expect(result.name.length).toBe(200);
             expect(result.origin.length).toBe(200);
             expect(result.cultivar.length).toBe(200);
-            expect(result.roaster.length).toBe(200);
+            expect(result.roastery.length).toBe(200);
             expect(result.tastingNotes.length).toBe(500);
         });
 

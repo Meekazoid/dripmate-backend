@@ -123,49 +123,54 @@ export function sanitizeCoffeeData(coffeeData) {
         return {};
     }
 
-    // Keep unknown/legacy fields for backward compatibility.
-    const sanitized = { ...coffeeData };
+    // 1. Zwinge das kanonische Schema (fängt alte PWAs ab, die noch alte Namen senden)
+    const data = { ...coffeeData };
+    if (data.coffee_name !== undefined) { data.name = data.name || data.coffee_name; delete data.coffee_name; }
+    if (data.roaster !== undefined) { data.roastery = data.roastery || data.roaster; delete data.roaster; }
+    if (data.variety !== undefined) { data.cultivar = data.cultivar || data.variety; delete data.variety; }
+    if (data.tasting_notes !== undefined) { data.tastingNotes = data.tastingNotes || data.tasting_notes; delete data.tasting_notes; }
+    if (data.color_tag !== undefined) { data.colorTag = data.colorTag || data.color_tag; delete data.color_tag; }
+
+    const sanitized = { ...data };
 
     const FEEDBACK_KEYS = ['bitterness', 'sweetness', 'acidity', 'body'];
     const FEEDBACK_VALUES = ['low', 'balanced', 'high'];
     const MAX_HISTORY_ENTRIES = 30;
     
-    // Field-level constraints from requirements
-    // These text fields are user-provided and need HTML stripping + truncation
+    // Kanonische Text-Felder
     const stringFields = {
         name: 200,
         origin: 200,
         cultivar: 200,
-        roaster: 200,
-        roastery: 200,     // Ã¢â€ Â NEW: RÃƒÂ¶sterei field for card editor
-        tastingNotes: 500
+        roastery: 200,
+        tastingNotes: 500,
+        colorTag: 50
     };
     
-    // Sanitize string fields with HTML stripping and truncation
+    // String-Felder desinfizieren und abschneiden
     for (const [field, maxLength] of Object.entries(stringFields)) {
-        const value = coffeeData[field];
+        const value = data[field];
         if (value !== undefined && value !== null) {
             const stripped = stripHTML(String(value));
             sanitized[field] = truncateString(stripped, maxLength);
         }
     }
     
-    // Sanitize process field with validation
-    if (coffeeData.process !== undefined) {
-        sanitized.process = validateProcess(coffeeData.process);
+    // Process Methode validieren
+    if (data.process !== undefined) {
+        sanitized.process = validateProcess(data.process);
     }
     
-    // Sanitize altitude field
-    if (coffeeData.altitude !== undefined) {
-        sanitized.altitude = cleanAltitude(coffeeData.altitude);
+    // Altitude desinfizieren
+    if (data.altitude !== undefined) {
+        sanitized.altitude = cleanAltitude(data.altitude);
     }
 
-    // Validate feedback (known keys + low|balanced|high values), tolerate unknown keys.
-    if (coffeeData.feedback !== undefined) {
-        const feedback = coffeeData.feedback;
+    // Feedback validieren
+    if (data.feedback !== undefined) {
+        const feedback = data.feedback;
         if (feedback && typeof feedback === 'object' && !Array.isArray(feedback)) {
             const nextFeedback = {};
-
             for (const [key, value] of Object.entries(feedback)) {
                 if (FEEDBACK_KEYS.includes(key) && typeof value === 'string') {
                     const normalized = value.toLowerCase().trim();
@@ -174,19 +179,16 @@ export function sanitizeCoffeeData(coffeeData) {
                     }
                     continue;
                 }
-
-                // Keep unknown/legacy feedback keys as-is to avoid breaking older clients.
                 nextFeedback[key] = value;
             }
-
             sanitized.feedback = nextFeedback;
         }
     }
 
-    // Validate feedback history with type/format guards and hard server-side cap.
-    if (coffeeData.feedbackHistory !== undefined) {
-        if (Array.isArray(coffeeData.feedbackHistory)) {
-            const sanitizedHistory = coffeeData.feedbackHistory
+    // Feedback History validieren
+    if (data.feedbackHistory !== undefined) {
+        if (Array.isArray(data.feedbackHistory)) {
+            const sanitizedHistory = data.feedbackHistory
                 .slice(-MAX_HISTORY_ENTRIES)
                 .map((entry) => {
                     if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return null;
@@ -197,43 +199,21 @@ export function sanitizeCoffeeData(coffeeData) {
                     if (!entry.timestamp || Number.isNaN(date.getTime())) return null;
                     sanitizedEntry.timestamp = date.toISOString();
 
-                    if (typeof entry.previousGrind === 'string') {
-                        sanitizedEntry.previousGrind = truncateString(stripHTML(entry.previousGrind), 100);
-                    }
-                    if (typeof entry.newGrind === 'string') {
-                        sanitizedEntry.newGrind = truncateString(stripHTML(entry.newGrind), 100);
-                    }
-                    if (typeof entry.previousTemp === 'string') {
-                        sanitizedEntry.previousTemp = truncateString(stripHTML(entry.previousTemp), 50);
-                    }
-                    if (typeof entry.newTemp === 'string') {
-                        sanitizedEntry.newTemp = truncateString(stripHTML(entry.newTemp), 50);
-                    }
-                    if (typeof entry.grindOffsetDelta === 'number' && Number.isFinite(entry.grindOffsetDelta)) {
-                        sanitizedEntry.grindOffsetDelta = entry.grindOffsetDelta;
-                    }
-                    if (typeof entry.customTempApplied === 'boolean') {
-                        sanitizedEntry.customTempApplied = entry.customTempApplied;
-                    }
-                    if (typeof entry.resetToInitial === 'boolean') {
-                        sanitizedEntry.resetToInitial = entry.resetToInitial;
-                    }
-                    // manualAdjust: 'grind' | 'temp'
-                    if (entry.manualAdjust === 'grind' || entry.manualAdjust === 'temp') {
-                        sanitizedEntry.manualAdjust = entry.manualAdjust;
-                    }
-                    // customTempApplied can be string (temp value) or boolean
+                    if (typeof entry.previousGrind === 'string') { sanitizedEntry.previousGrind = truncateString(stripHTML(entry.previousGrind), 100); }
+                    if (typeof entry.newGrind === 'string') { sanitizedEntry.newGrind = truncateString(stripHTML(entry.newGrind), 100); }
+                    if (typeof entry.previousTemp === 'string') { sanitizedEntry.previousTemp = truncateString(stripHTML(entry.previousTemp), 50); }
+                    if (typeof entry.newTemp === 'string') { sanitizedEntry.newTemp = truncateString(stripHTML(entry.newTemp), 50); }
+                    if (typeof entry.grindOffsetDelta === 'number' && Number.isFinite(entry.grindOffsetDelta)) { sanitizedEntry.grindOffsetDelta = entry.grindOffsetDelta; }
+                    if (typeof entry.resetToInitial === 'boolean') { sanitizedEntry.resetToInitial = entry.resetToInitial; }
+                    if (entry.manualAdjust === 'grind' || entry.manualAdjust === 'temp') { sanitizedEntry.manualAdjust = entry.manualAdjust; }
                     if (typeof entry.customTempApplied === 'string') {
                         sanitizedEntry.customTempApplied = truncateString(stripHTML(entry.customTempApplied), 50);
                     } else if (typeof entry.customTempApplied === 'boolean') {
                         sanitizedEntry.customTempApplied = entry.customTempApplied;
                     }
-                    // brewStart entries
                     if (entry.brewStart === true) {
                         sanitizedEntry.brewStart = true;
-                        if (typeof entry.brewLabel === 'string') {
-                            sanitizedEntry.brewLabel = truncateString(stripHTML(entry.brewLabel), 200);
-                        }
+                        if (typeof entry.brewLabel === 'string') { sanitizedEntry.brewLabel = truncateString(stripHTML(entry.brewLabel), 200); }
                     }
 
                     return sanitizedEntry;
@@ -244,29 +224,15 @@ export function sanitizeCoffeeData(coffeeData) {
         }
     }
     
-    // Preserve fields that don't need sanitization (dates, IDs, metadata)
     const nonStringFields = [
-        'addedDate',       // ISO date string when coffee was added
-        'id',              // Database ID
-        'savedAt',         // Backend timestamp
-        'createdAt',       // Backend timestamp
-        'updatedAt',       // Backend timestamp
-        'roastDate',       // User-set roast date (YYYY-MM-DD)
-        'favorite',        // Boolean flag
-        'favoritedAt',     // ISO date string
-        'deleted',         // Boolean flag (soft delete / compost)
-        'deletedAt',       // ISO date string
-        'grindOffset',     // Integer: grinder-neutral adjustment
-        'customTemp',      // String: user-adjusted temperature
-        'customAmount',    // Number: user-adjusted coffee amount (grams)
-        'initialGrind',    // String: initial grind setting (for reset)
-        'initialTemp',     // String: initial temperature (for reset)
-        // feedback / feedbackHistory handled with dedicated validation above
+        'addedDate', 'id', 'savedAt', 'createdAt', 'updatedAt', 'roastDate', 
+        'favorite', 'favoritedAt', 'deleted', 'deletedAt', 'grindOffset', 
+        'customTemp', 'customAmount', 'initialGrind', 'initialTemp'
     ];
     
     for (const field of nonStringFields) {
-        if (coffeeData[field] !== undefined) {
-            sanitized[field] = coffeeData[field];
+        if (data[field] !== undefined) {
+            sanitized[field] = data[field];
         }
     }
     

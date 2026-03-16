@@ -135,7 +135,47 @@ export async function initDatabase() {
         console.log('[DB] SQLite ready:', dbPath);
     }
 
+    // --- NEU: Automatische Migration aller alten JSON Blobs auf das kanonische Schema ---
+    await migrateCoffeeJSONBlobs();
+
     return { db: _db, dbType };
+}
+
+/**
+ * One-time migration to ensure all JSON blobs in the database use the canonical schema.
+ * Tolerant & idempotent.
+ */
+async function migrateCoffeeJSONBlobs() {
+    const conn = getDatabase();
+    console.log('[DB] Running JSON canonical schema migration...');
+    const coffees = await q('all', 'SELECT id, data FROM coffees');
+    let updated = 0;
+
+    for (const row of coffees) {
+        try {
+            const data = JSON.parse(row.data);
+            let changed = false;
+
+            if (data.coffee_name !== undefined) { data.name = data.name || data.coffee_name; delete data.coffee_name; changed = true; }
+            if (data.roaster !== undefined) { data.roastery = data.roastery || data.roaster; delete data.roaster; changed = true; }
+            if (data.variety !== undefined) { data.cultivar = data.cultivar || data.variety; delete data.variety; changed = true; }
+            if (data.tasting_notes !== undefined) { data.tastingNotes = data.tastingNotes || data.tasting_notes; delete data.tasting_notes; changed = true; }
+            if (data.color_tag !== undefined) { data.colorTag = data.colorTag || data.color_tag; delete data.color_tag; changed = true; }
+
+            if (changed) {
+                await q('run', 'UPDATE coffees SET data = $1 WHERE id = $2', [JSON.stringify(data), row.id]);
+                updated++;
+            }
+        } catch (e) {
+            console.error(`[DB] Failed to migrate coffee JSON for ID ${row.id}:`, e.message);
+        }
+    }
+
+    if (updated > 0) {
+        console.log(`[DB] Migrated ${updated} coffee records to the canonical schema.`);
+    } else {
+        console.log('[DB] All coffee records are already in the canonical schema.');
+    }
 }
 
 // ==========================================
