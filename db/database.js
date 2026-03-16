@@ -1,5 +1,5 @@
 ﻿// ==========================================
-// DRIPMATE DATABASE MODULE V5.2
+// DRIPMATE DATABASE MODUL V5.2
 // Device-Binding + Grinder Variants (8) + Method Preference + Water Hardness
 // ==========================================
 
