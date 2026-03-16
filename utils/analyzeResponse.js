@@ -29,7 +29,7 @@ export function buildCoffeeDefaults(coffeeData) {
         process: coffeeData?.process || 'washed',
         cultivar: coffeeData?.cultivar || 'Unknown',
         altitude: coffeeData?.altitude || '1500',
-        roaster: coffeeData?.roaster || 'Unknown',
+        roastery: coffeeData?.roastery || coffeeData?.roaster || 'Unknown', // Sichert ab, falls AI "roaster" ausgibt
         tastingNotes: coffeeData?.tastingNotes || 'No notes',
         addedDate: new Date().toISOString()
     };

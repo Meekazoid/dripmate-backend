@@ -78,7 +78,7 @@ If it IS a coffee bag or coffee package, analyze it and extract the following in
   "process": "processing method (washed, natural, honey, etc)",
   "cultivar": "variety/cultivar",
   "altitude": "altitude in masl",
-  "roaster": "roaster name",
+  "roastery": "roaster name",
   "tastingNotes": "tasting notes"
 }
 
