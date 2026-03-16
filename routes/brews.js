@@ -1,4 +1,4 @@
-﻿// ==========================================
+// ==========================================
 // BREW PARTIAL UPDATE ENDPOINT
 // PATCH /api/brews/:id  — Card Editor inline edits
 // ==========================================
@@ -6,18 +6,14 @@
 import express from 'express';
 import { authenticateUser } from '../middleware/auth.js';
 import { queries, beginTransaction, commit, rollback } from '../db/database.js';
-import { stripHTML, truncateString } from '../utils/sanitize.js';
+import { sanitizeCoffeeData } from '../utils/sanitize.js'; // <-- GEÄNDERT: Wir nutzen jetzt unseren zentralen Türsteher
 
 const router = express.Router();
 
 /**
- * Partial update a coffee card (name, origin, roastery).
- *
- * Loads the user's full coffee array, finds the target by its coffee_uid (the
- * stable ID stored in the DB row), applies the sanitized field updates, then
- * rewrites the entire array atomically inside a transaction.
- *
- * Returns the updated coffee object on success.
+ * Partial update a coffee card.
+ * Merges incoming updates with the existing coffee object and sanitizes it
+ * against the canonical schema before saving.
  */
 router.patch('/:id', authenticateUser, async (req, res) => {
     try {
@@ -25,18 +21,7 @@ router.patch('/:id', authenticateUser, async (req, res) => {
         const userId  = req.user.id;
         const updates = req.body;
 
-        // Only allow specific fields to be patched
-        const allowedFields    = ['coffee_name', 'origin', 'roastery', 'colorTag'];
-        const sanitizedUpdates = {};
-
-        for (const field of allowedFields) {
-            if (updates[field] !== undefined) {
-                const value = String(updates[field]).trim();
-                sanitizedUpdates[field] = truncateString(stripHTML(value), 200);
-            }
-        }
-
-        if (Object.keys(sanitizedUpdates).length === 0) {
+        if (!updates || Object.keys(updates).length === 0) {
             return res.status(400).json({
                 success: false,
                 error: 'No valid fields to update'
@@ -57,8 +42,6 @@ router.patch('/:id', authenticateUser, async (req, res) => {
         let coffeeIndex = -1;
         const parsedCoffees = userCoffees.map((row, idx) => {
             const data = typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
-
-            // Attach the stable uid and timestamp so we can re-save correctly
             const entry = { ...data, _uid: row.coffee_uid, _method: row.method };
 
             if (String(row.coffee_uid) === String(id) || String(idx) === String(id)) {
@@ -75,14 +58,20 @@ router.patch('/:id', authenticateUser, async (req, res) => {
             });
         }
 
-        // Apply the sanitized field updates
-        // coffee_name maps to the internal `name` field in the stored data model
-        const coffee = parsedCoffees[coffeeIndex];
+        // 1. Hole den bestehenden Kaffee
+        const existingCoffee = parsedCoffees[coffeeIndex];
 
-        if (sanitizedUpdates.coffee_name !== undefined) coffee.name     = sanitizedUpdates.coffee_name;
-        if (sanitizedUpdates.origin      !== undefined) coffee.origin   = sanitizedUpdates.origin;
-        if (sanitizedUpdates.roastery    !== undefined) coffee.roastery = sanitizedUpdates.roastery;
-        if (sanitizedUpdates.colorTag    !== undefined) coffee.colorTag = sanitizedUpdates.colorTag;
+        // 2. Mische bestehende Daten mit den neuen Updates aus dem Editor
+        const mergedCoffee = { ...existingCoffee, ...updates };
+
+        // 3. Systemfelder temporär abtrennen, damit sie nicht versehentlich wegsanitisiert werden
+        const { _uid, _method, ...dataToSanitize } = mergedCoffee;
+        
+        // 4. Jage das komplett gemergte Objekt durch unseren strikten Türsteher
+        const finalCoffeeData = sanitizeCoffeeData(dataToSanitize);
+
+        // 5. Systemfelder für den Speichervorgang wieder anheften
+        parsedCoffees[coffeeIndex] = { ...finalCoffeeData, _uid, _method };
 
         // Atomically rewrite the full coffee array
         await beginTransaction();
@@ -90,7 +79,7 @@ router.patch('/:id', authenticateUser, async (req, res) => {
             await queries.deleteUserCoffees(userId);
 
             for (const c of parsedCoffees) {
-                // Strip the runtime-only tracking fields before saving back to DB
+                // Systemfelder vor dem Speichern wieder entfernen
                 const { _uid, _method, ...dataToSave } = c;
                 await queries.saveCoffee(userId, _uid, JSON.stringify(dataToSave), _method || 'v60');
             }
@@ -101,13 +90,12 @@ router.patch('/:id', authenticateUser, async (req, res) => {
             throw txError;
         }
 
-        console.log(`[OK] PATCH /api/brews/${id} updated: ${Object.keys(sanitizedUpdates).join(', ')} (user: ${req.user.username})`);
+        console.log(`[OK] PATCH /api/brews/${id} updated successfully (user: ${req.user.username})`);
 
-        // Return the updated coffee without the internal tracking fields
-        const { _uid: _, _method: __, ...responseData } = coffee;
+        // Sende dem Frontend exakt das saubere, gespeicherte Objekt zurück
         res.json({
             success: true,
-            coffee: responseData
+            coffee: finalCoffeeData
         });
 
     } catch (error) {
