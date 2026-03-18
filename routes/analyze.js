@@ -193,8 +193,10 @@ Only return valid JSON or NOT_COFFEE, no other text.`
         });
 
     } catch (error) {
-        // Distinguish network/timeout errors from unexpected crashes
-        if (error.name === 'AbortError' || error.message?.includes('abort')) {
+        const msg = (error?.message || '').toLowerCase();
+
+        // 1) Timeout / aborted request
+        if (error?.name === 'AbortError' || msg.includes('abort') || msg.includes('timed out') || msg.includes('timeout')) {
             console.error('[ERROR] /analyze-coffee: Request timed out');
             return res.status(504).json({
                 success: false,
@@ -203,10 +205,30 @@ Only return valid JSON or NOT_COFFEE, no other text.`
             });
         }
 
+        // 2) Network / DNS / TLS / socket failures (no HTTP response from provider)
+        if (
+            msg.includes('fetch failed') ||
+            msg.includes('econnreset') ||
+            msg.includes('enotfound') ||
+            msg.includes('eai_again') ||
+            msg.includes('etimedout') ||
+            msg.includes('socket hang up') ||
+            msg.includes('network')
+        ) {
+            console.error('[ERROR] /analyze-coffee: Upstream network failure:', error.message);
+            return res.status(502).json({
+                success: false,
+                error: 'Analysis provider is unavailable. Please try again.',
+                errorCode: 'AI_UPSTREAM_ERROR'
+            });
+        }
+
+        // 3) Fallback: unexpected internal error
         console.error('[ERROR] /analyze-coffee:', error.message);
-        res.status(500).json({
+        return res.status(500).json({
             success: false,
-            error: 'Analysis failed. Please try again.'
+            error: 'Analysis failed. Please try again.',
+            errorCode: 'AI_INTERNAL_ERROR'
         });
     }
 });
