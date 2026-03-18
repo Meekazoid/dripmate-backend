@@ -93,14 +93,54 @@ Only return valid JSON or NOT_COFFEE, no other text.`
 
         if (!response.ok) {
             const providerError = data?.error?.message || 'AI provider request failed';
-            console.error(`[ERROR] Analyze provider error: ${response.status} ${providerError}`);
+            const status = response.status;
 
-            const statusCode = response.status === 429 ? 429 : 502;
-            return res.status(statusCode).json({
+            // 401 — API key invalid or revoked
+            if (status === 401) {
+                console.error(`[ERROR] Analyze: Anthropic API key invalid (401): ${providerError}`);
+                return res.status(503).json({
+                    success: false,
+                    error: 'AI analysis is temporarily unavailable. Please try again later.',
+                    errorCode: 'AI_AUTH_ERROR'
+                });
+            }
+
+            // 429 — Anthropic rate limit hit
+            if (status === 429) {
+                console.warn(`[WARN] Analyze: Anthropic API rate limit (429): ${providerError}`);
+                return res.status(429).json({
+                    success: false,
+                    error: 'AI analysis is busy. Please try again in a minute.',
+                    errorCode: 'AI_RATE_LIMIT'
+                });
+            }
+
+            // 529 — Anthropic overloaded
+            if (status === 529) {
+                console.warn(`[WARN] Analyze: Anthropic API overloaded (529): ${providerError}`);
+                return res.status(503).json({
+                    success: false,
+                    error: 'AI service is temporarily overloaded. Please try again later.',
+                    errorCode: 'AI_OVERLOADED'
+                });
+            }
+
+            // 400 — Bad request (e.g. image too large, invalid media type)
+            if (status === 400) {
+                console.error(`[ERROR] Analyze: Anthropic API bad request (400): ${providerError}`);
+                return res.status(422).json({
+                    success: false,
+                    error: 'Could not process this image. Please try a different photo or reduce the image size.',
+                    errorCode: 'AI_BAD_REQUEST'
+                });
+            }
+
+            // All other errors — generic upstream failure
+            console.error(`[ERROR] Analyze: Anthropic API error (${status}): ${providerError}`);
+            return res.status(502).json({
                 success: false,
-                error: statusCode === 429
-                    ? 'AI analysis limit reached. Please try again later.'
-                    : 'Analysis provider is unavailable. Please try again.'
+                error: 'Analysis provider is unavailable. Please try again.',
+                errorCode: 'AI_UPSTREAM_ERROR'
             });
         }
 
@@ -153,6 +193,16 @@ Only return valid JSON or NOT_COFFEE, no other text.`
         });
 
     } catch (error) {
+        // Distinguish network/timeout errors from unexpected crashes
+        if (error.name === 'AbortError' || error.message?.includes('abort')) {
+            console.error('[ERROR] /analyze-coffee: Request timed out');
+            return res.status(504).json({
+                success: false,
+                error: 'AI analysis timed out. Please try again.',
+                errorCode: 'AI_TIMEOUT'
+            });
+        }
+
         console.error('[ERROR] /analyze-coffee:', error.message);
         res.status(500).json({
             success: false,
