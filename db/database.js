@@ -335,6 +335,14 @@ async function runPostgreSQLMigrations() {
     } catch (err) {
         console.log('[DB] Note: ai_scan_usage_daily may already exist');
     }
+
+    // Step 11: Additional indexes for lookup queries (safe — all tables exist by now)
+    try {
+        await conn.pool.query(`CREATE INDEX IF NOT EXISTS idx_registrations_email  ON registrations(email)`);
+        await conn.pool.query(`CREATE INDEX IF NOT EXISTS idx_magic_tokens_user_id ON magic_link_tokens(user_id)`);
+    } catch (err) {
+        console.log('[DB] Note: additional indexes may already exist');
+    }
 }
 
 // ==========================================
@@ -538,7 +546,7 @@ export const queries = {
 
     async getUserByToken(token, deviceId = null) {
         const sql = `
-            SELECT id, username, email, device_id, grinder_preference, method_preference, water_hardness, created_at
+            SELECT id, username, email, device_id, grinder_preference, method_preference, water_hardness, last_login_at, created_at
             FROM users
             WHERE token = $1
             ${deviceId ? 'AND device_id = $2' : ''}
@@ -850,6 +858,24 @@ export const queries = {
 
     async removeFromWhitelist(id) {
         return q('run', `DELETE FROM whitelist WHERE id = $1`, [id]);
+    },
+
+    // ------------------------------------------
+    // MAINTENANCE QUERIES
+    // ------------------------------------------
+
+    /**
+     * Remove expired and used magic link tokens.
+     * Call on server startup to prevent unbounded table growth.
+     */
+    async cleanupExpiredMagicTokens() {
+        const timeCheck = dbType === 'sqlite'
+            ? "datetime('now', '-24 hours')"
+            : "NOW() - INTERVAL '24 hours'";
+        const trueVal = dbType === 'sqlite' ? '1' : 'true';
+        return q('run',
+            `DELETE FROM magic_link_tokens WHERE used = ${trueVal} OR expires_at < ${timeCheck}`
+        );
     }
 };
 
