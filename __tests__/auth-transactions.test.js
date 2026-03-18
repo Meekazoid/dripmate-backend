@@ -1,5 +1,5 @@
 // Tests for authentication middleware and transaction support
-import { initDatabase, queries, closeDatabase, beginTransaction, commit, rollback } from '../db/database.js';
+import { initDatabase, queries, closeDatabase, withTransaction } from '../db/database.js';
 
 describe('Authentication and Transactions', () => {
     beforeAll(async () => {
@@ -13,7 +13,7 @@ describe('Authentication and Transactions', () => {
         await closeDatabase();
     });
 
-    describe('Transaction Support', () => {
+    describe('Transaction Support (withTransaction)', () => {
         let testUserId;
         const testToken = 'transaction-test-token-' + Date.now();
 
@@ -22,42 +22,44 @@ describe('Authentication and Transactions', () => {
         });
 
         test('should commit transaction successfully', async () => {
-            await beginTransaction();
-
             const coffeeData = JSON.stringify({
                 name: 'Transaction Test Coffee',
                 origin: 'Colombia',
                 process: 'washed'
             });
 
-            await queries.saveCoffee(testUserId, 'tx-coffee-1', coffeeData);
-            await commit();
+            await withTransaction(async (tx) => {
+                await tx.run(
+                    `INSERT INTO coffees (user_id, coffee_uid, data, method)
+                     VALUES ($1, $2, $3, $4)
+                     ON CONFLICT(user_id, coffee_uid)
+                     DO UPDATE SET data = excluded.data`,
+                    [testUserId, 'tx-coffee-1', coffeeData, 'v60']
+                );
+            });
 
             const coffees = await queries.getUserCoffees(testUserId);
             expect(coffees.length).toBeGreaterThan(0);
         });
 
         test('should rollback transaction on error', async () => {
-            // Get initial coffee count
             const initialCoffees = await queries.getUserCoffees(testUserId);
             const initialCount = initialCoffees.length;
 
-            await beginTransaction();
+            await expect(
+                withTransaction(async (tx) => {
+                    await tx.run(
+                        `INSERT INTO coffees (user_id, coffee_uid, data, method)
+                         VALUES ($1, $2, $3, $4)
+                         ON CONFLICT(user_id, coffee_uid)
+                         DO UPDATE SET data = excluded.data`,
+                        [testUserId, 'tx-rollback-coffee', JSON.stringify({ name: 'Will be rolled back' }), 'v60']
+                    );
 
-            try {
-                const coffeeData = JSON.stringify({
-                    name: 'Coffee to be rolled back',
-                    origin: 'Ethiopia',
-                    process: 'natural'
-                });
-
-                await queries.saveCoffee(testUserId, 'tx-coffee-1', coffeeData);
-
-                // Simulate an error
-                throw new Error('Simulated error');
-            } catch (error) {
-                await rollback();
-            }
+                    // Simulate an error — withTransaction will auto-rollback
+                    throw new Error('Simulated error');
+                })
+            ).rejects.toThrow('Simulated error');
 
             // Coffee count should remain the same after rollback
             const coffeesAfterRollback = await queries.getUserCoffees(testUserId);
@@ -65,50 +67,89 @@ describe('Authentication and Transactions', () => {
         });
 
         test('should protect against data loss during sync operation', async () => {
-            // First, add some initial coffees
-            await beginTransaction();
-            await queries.deleteUserCoffees(testUserId);
-            
-            const initialCoffees = [
-                { name: 'Coffee 1', origin: 'Brazil' },
-                { name: 'Coffee 2', origin: 'Guatemala' }
-            ];
+            // First, set up initial coffees inside a transaction
+            await withTransaction(async (tx) => {
+                await tx.run(`DELETE FROM coffees WHERE user_id = $1`, [testUserId]);
 
-            for (const coffee of initialCoffees) {
-                await queries.saveCoffee(testUserId, `initial-${coffee.name}`, JSON.stringify(coffee));
-            }
-            await commit();
+                const initialCoffees = [
+                    { name: 'Coffee 1', origin: 'Brazil' },
+                    { name: 'Coffee 2', origin: 'Guatemala' }
+                ];
 
-            // Now test transaction protection during sync
-            const newCoffees = [
-                { name: 'New Coffee 1', origin: 'Kenya' },
-                { name: 'New Coffee 2', origin: 'Rwanda' },
-                { name: 'New Coffee 3', origin: 'Burundi' }
-            ];
-
-            await beginTransaction();
-            
-            try {
-                await queries.deleteUserCoffees(testUserId);
-                
-                // Simulate partial save (error after 2 coffees)
-                for (let i = 0; i < 2; i++) {
-                    await queries.saveCoffee(testUserId, `new-${i}`, JSON.stringify(newCoffees[i]));
+                for (const coffee of initialCoffees) {
+                    await tx.run(
+                        `INSERT INTO coffees (user_id, coffee_uid, data, method)
+                         VALUES ($1, $2, $3, $4)`,
+                        [testUserId, `initial-${coffee.name}`, JSON.stringify(coffee), 'v60']
+                    );
                 }
-                
-                // Simulate error
-                throw new Error('Database error during save');
-            } catch (error) {
-                await rollback();
-            }
+            });
+
+            // Now simulate a failed sync — should rollback and preserve originals
+            await expect(
+                withTransaction(async (tx) => {
+                    await tx.run(`DELETE FROM coffees WHERE user_id = $1`, [testUserId]);
+
+                    const newCoffees = [
+                        { name: 'New Coffee 1', origin: 'Kenya' },
+                        { name: 'New Coffee 2', origin: 'Rwanda' },
+                    ];
+
+                    for (let i = 0; i < newCoffees.length; i++) {
+                        await tx.run(
+                            `INSERT INTO coffees (user_id, coffee_uid, data, method)
+                             VALUES ($1, $2, $3, $4)`,
+                            [testUserId, `new-${i}`, JSON.stringify(newCoffees[i]), 'v60']
+                        );
+                    }
+
+                    // Simulate error mid-sync
+                    throw new Error('Database error during save');
+                })
+            ).rejects.toThrow('Database error during save');
 
             // Original coffees should still be there
             const coffeesAfterFailedSync = await queries.getUserCoffees(testUserId);
             expect(coffeesAfterFailedSync.length).toBe(2);
-            
+
             const parsedCoffees = coffeesAfterFailedSync.map(c => JSON.parse(c.data));
             expect(parsedCoffees.some(c => c.name === 'Coffee 1')).toBe(true);
             expect(parsedCoffees.some(c => c.name === 'Coffee 2')).toBe(true);
+        });
+
+        test('should serialize concurrent SQLite transactions (no overlap)', async () => {
+            // Both transactions target the same user but shouldn't interfere
+            const tx1 = withTransaction(async (tx) => {
+                await tx.run(
+                    `INSERT INTO coffees (user_id, coffee_uid, data, method)
+                     VALUES ($1, $2, $3, $4)
+                     ON CONFLICT(user_id, coffee_uid)
+                     DO UPDATE SET data = excluded.data`,
+                    [testUserId, 'concurrent-1', JSON.stringify({ name: 'Concurrent A' }), 'v60']
+                );
+                return 'tx1-done';
+            });
+
+            const tx2 = withTransaction(async (tx) => {
+                await tx.run(
+                    `INSERT INTO coffees (user_id, coffee_uid, data, method)
+                     VALUES ($1, $2, $3, $4)
+                     ON CONFLICT(user_id, coffee_uid)
+                     DO UPDATE SET data = excluded.data`,
+                    [testUserId, 'concurrent-2', JSON.stringify({ name: 'Concurrent B' }), 'v60']
+                );
+                return 'tx2-done';
+            });
+
+            // Both should resolve without "cannot start a transaction within a transaction"
+            const results = await Promise.all([tx1, tx2]);
+            expect(results).toEqual(['tx1-done', 'tx2-done']);
+
+            // Both coffees should exist
+            const c1 = await queries.getCoffeeByUid(testUserId, 'concurrent-1');
+            const c2 = await queries.getCoffeeByUid(testUserId, 'concurrent-2');
+            expect(c1).not.toBeNull();
+            expect(c2).not.toBeNull();
         });
     });
 
@@ -123,7 +164,6 @@ describe('Authentication and Transactions', () => {
                 query: {}
             };
 
-            // Simulate the extractAuthCredentials function logic
             let token = null;
             const authHeader = mockReq.headers.authorization;
             if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -148,7 +188,6 @@ describe('Authentication and Transactions', () => {
                 query: {}
             };
 
-            // Simulate the extractAuthCredentials function logic
             let token = null;
             const authHeader = mockReq.headers.authorization;
             if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -173,7 +212,6 @@ describe('Authentication and Transactions', () => {
                 }
             };
 
-            // Simulate the extractAuthCredentials function logic
             let token = null;
             const authHeader = mockReq.headers.authorization;
             if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -204,7 +242,6 @@ describe('Authentication and Transactions', () => {
                 }
             };
 
-            // Simulate the extractAuthCredentials function logic
             let token = null;
             const authHeader = mockReq.headers.authorization;
             if (authHeader && authHeader.startsWith('Bearer ')) {
