@@ -142,13 +142,33 @@ export async function initDatabase() {
 }
 
 /**
- * One-time migration to ensure all JSON blobs in the database use the canonical schema.
+ * Migration to ensure all JSON blobs in the database use the canonical schema.
  * Tolerant & idempotent.
+ *
+ * V5.4: Optimized — only loads rows that still contain legacy keys instead of
+ * scanning the entire coffees table on every startup. On a clean database this
+ * resolves in a single cheap LIKE query returning zero rows.
  */
 async function migrateCoffeeJSONBlobs() {
-    const conn = getDatabase();
-    console.log('[DB] Running JSON canonical schema migration...');
-    const coffees = await q('all', 'SELECT id, data FROM coffees');
+    console.log('[DB] Checking for legacy JSON schema keys...');
+
+    // Only fetch rows that still contain at least one legacy key (text search on JSON blob).
+    // This avoids loading/parsing thousands of rows on every cold start.
+    const legacyFilter = `
+        data LIKE '%"coffee_name"%'
+        OR data LIKE '%"tasting_notes"%'
+        OR data LIKE '%"color_tag"%'
+        OR data LIKE '%"variety"%'
+        OR data LIKE '%"roaster"%'
+    `;
+    const coffees = await q('all', `SELECT id, data FROM coffees WHERE ${legacyFilter}`);
+
+    if (coffees.length === 0) {
+        console.log('[DB] JSON schema migration: nothing to migrate');
+        return;
+    }
+
+    console.log(`[DB] Found ${coffees.length} coffee(s) with legacy keys — migrating...`);
     let updated = 0;
 
     for (const row of coffees) {
@@ -171,11 +191,7 @@ async function migrateCoffeeJSONBlobs() {
         }
     }
 
-    if (updated > 0) {
-        console.log(`[DB] Migrated ${updated} coffee records to the canonical schema.`);
-    } else {
-        console.log('[DB] All coffee records are already in the canonical schema.');
-    }
+    console.log(`[DB] Migrated ${updated} coffee record(s) to the canonical schema.`);
 }
 
 // ==========================================
