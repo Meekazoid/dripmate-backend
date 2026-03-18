@@ -754,14 +754,30 @@ export const queries = {
                 `DELETE FROM coffees WHERE user_id = $1 AND coffee_uid <> ALL($2::text[])`,
                 [userId, keepCoffeeUids]
             );
-        } else {
-            const conn         = getDatabase();
-            const placeholders = keepCoffeeUids.map(() => '?').join(', ');
-            return conn.run(
-                `DELETE FROM coffees WHERE user_id = ? AND coffee_uid NOT IN (${placeholders})`,
-                [userId, ...keepCoffeeUids]
+        }
+
+        // SQLite: use a temp table to avoid the 999-variable placeholder limit.
+        // With NOT IN (?, ?, ...) and >999 UIDs, SQLite throws SQLITE_ERROR.
+        const conn = getDatabase();
+        await conn.run(`CREATE TEMP TABLE IF NOT EXISTS _keep_uids (uid TEXT)`);
+        await conn.run(`DELETE FROM _keep_uids`);
+
+        const BATCH = 500;
+        for (let i = 0; i < keepCoffeeUids.length; i += BATCH) {
+            const batch = keepCoffeeUids.slice(i, i + BATCH);
+            const placeholders = batch.map(() => '?').join(',');
+            await conn.run(
+                `INSERT INTO _keep_uids (uid) VALUES ${batch.map(() => '(?)').join(',')}`,
+                batch
             );
         }
+
+        const result = await conn.run(
+            `DELETE FROM coffees WHERE user_id = ? AND coffee_uid NOT IN (SELECT uid FROM _keep_uids)`,
+            [userId]
+        );
+        await conn.run(`DROP TABLE IF EXISTS _keep_uids`);
+        return result;
     },
 
     async deleteUserCoffees(userId) {
