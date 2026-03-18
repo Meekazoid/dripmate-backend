@@ -1,4 +1,4 @@
-# Dripmate API Documentation v5.0
+# dripmate API Documentation v5.4
 
 ## Base URL
 ```
@@ -83,8 +83,11 @@ curl "https://your-backend.railway.app/api/auth/validate?token=YOUR_TOKEN&device
   "user": {
     "id": 1,
     "username": "johndoe",
+    "email": "john@example.com",
     "deviceId": "device-abc123",
-    "grinderPreference": "fellow",
+    "grinderPreference": "fellow_gen2",
+    "methodPreference": "v60",
+    "waterHardness": 12.5,
     "createdAt": "2026-02-06T10:00:00.000Z"
   }
 }
@@ -128,8 +131,14 @@ curl "https://your-backend.railway.app/api/user/grinder?token=YOUR_TOKEN&deviceI
 ```
 
 **Possible Values:**
-- `"fellow"` - Fellow Ode Gen 2
-- `"comandante"` - Comandante C40 MK3
+- `"comandante_mk4"` - Comandante C40 MK4
+- `"comandante_mk3"` - Comandante C40 MK3
+- `"fellow_gen2"` - Fellow Ode Gen 2 (default)
+- `"fellow_gen1"` - Fellow Ode Gen 1
+- `"timemore_s3"` - Timemore Chestnut S3
+- `"timemore_c2"` - Timemore Chestnut C2
+- `"1zpresso"` - 1Zpresso
+- `"baratza"` - Baratza Encore
 
 **Error Response (401):**
 ```json
@@ -518,13 +527,32 @@ curl -X POST https://your-backend.railway.app/api/analyze-coffee \
 |------|---------|
 | 200 | Success |
 | 201 | Created |
-| 400 | Bad Request - Invalid input |
-| 401 | Unauthorized - Invalid/missing token |
-| 403 | Forbidden - Device mismatch or limit reached |
-| 404 | Not Found - Endpoint doesn't exist |
-| 409 | Conflict - Username already exists |
-| 429 | Too Many Requests - Rate limit exceeded |
+| 400 | Bad Request — invalid input |
+| 401 | Unauthorized — invalid/missing token |
+| 403 | Forbidden — device mismatch or daily limit reached |
+| 404 | Not Found — endpoint or resource doesn't exist |
+| 409 | Conflict — username or email already exists |
+| 422 | Unprocessable — image not a coffee bag, or AI could not process |
+| 429 | Too Many Requests — rate limit exceeded |
 | 500 | Internal Server Error |
+| 502 | Bad Gateway — upstream AI provider unavailable |
+| 503 | Service Unavailable — AI auth error or provider overloaded |
+| 504 | Gateway Timeout — AI analysis timed out |
+
+### AI Analysis Error Codes (v5.4+)
+
+The `POST /api/analyze-coffee` endpoint returns an `errorCode` field on failure:
+
+| `errorCode` | HTTP Status | Meaning |
+|-------------|-------------|---------|
+| `DAILY_SCAN_LIMIT_REACHED` | 403 | User has used all 5 daily scans |
+| `AI_AUTH_ERROR` | 503 | Anthropic API key invalid |
+| `AI_RATE_LIMIT` | 429 | Anthropic rate limit hit |
+| `AI_OVERLOADED` | 503 | Anthropic service overloaded |
+| `AI_BAD_REQUEST` | 422 | Image too large or invalid format |
+| `AI_UPSTREAM_ERROR` | 502 | Anthropic unreachable / network failure |
+| `AI_TIMEOUT` | 504 | Request to Anthropic timed out |
+| `AI_INTERNAL_ERROR` | 500 | Unexpected server error |
 
 ---
 
@@ -535,27 +563,37 @@ curl -X POST https://your-backend.railway.app/api/analyze-coffee \
 ```javascript
 // Get grinder preference
 const getGrinderPreference = async (token, deviceId) => {
-  const response = await fetch(
-    `https://your-backend.railway.app/api/user/grinder?token=${token}&deviceId=${deviceId}`
-  );
+  const response = await fetch('https://dripmate-backend-production.up.railway.app/api/user/grinder', {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'X-Device-ID': deviceId
+    }
+  });
   return response.json();
 };
 
 // Update grinder preference
 const updateGrinderPreference = async (token, deviceId, grinder) => {
-  const response = await fetch('https://your-backend.railway.app/api/user/grinder', {
+  const response = await fetch('https://dripmate-backend-production.up.railway.app/api/user/grinder', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token, deviceId, grinder })
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+      'X-Device-ID': deviceId
+    },
+    body: JSON.stringify({ grinder })
   });
   return response.json();
 };
 
 // Get coffees
 const getCoffees = async (token, deviceId) => {
-  const response = await fetch(
-    `https://your-backend.railway.app/api/coffees?token=${token}&deviceId=${deviceId}`
-  );
+  const response = await fetch('https://dripmate-backend-production.up.railway.app/api/coffees', {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'X-Device-ID': deviceId
+    }
+  });
   return response.json();
 };
 ```
@@ -565,19 +603,23 @@ const getCoffees = async (token, deviceId) => {
 ```python
 import requests
 
+BASE = 'https://dripmate-backend-production.up.railway.app'
+HEADERS = lambda token, device_id: {
+    'Authorization': f'Bearer {token}',
+    'X-Device-ID': device_id
+}
+
 # Get grinder preference
 def get_grinder_preference(token, device_id):
-    response = requests.get(
-        f'https://your-backend.railway.app/api/user/grinder',
-        params={'token': token, 'deviceId': device_id}
-    )
+    response = requests.get(f'{BASE}/api/user/grinder', headers=HEADERS(token, device_id))
     return response.json()
 
 # Update grinder preference
 def update_grinder_preference(token, device_id, grinder):
     response = requests.post(
-        'https://your-backend.railway.app/api/user/grinder',
-        json={'token': token, 'deviceId': device_id, 'grinder': grinder}
+        f'{BASE}/api/user/grinder',
+        headers={**HEADERS(token, device_id), 'Content-Type': 'application/json'},
+        json={'grinder': grinder}
     )
     return response.json()
 ```
@@ -589,40 +631,60 @@ def update_grinder_preference(token, device_id, grinder):
 ### Users Table
 ```sql
 CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    username TEXT NOT NULL UNIQUE,
-    token TEXT NOT NULL UNIQUE,
-    device_id TEXT UNIQUE,
-    device_info TEXT,
-    grinder_preference TEXT DEFAULT 'fellow',  -- ⭐ NEW
-    last_login_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id                  SERIAL PRIMARY KEY,
+    username            TEXT NOT NULL UNIQUE,
+    token               TEXT NOT NULL UNIQUE,
+    email               TEXT,
+    device_id           TEXT,
+    device_info         TEXT,
+    grinder_preference  TEXT DEFAULT 'fellow_gen2',
+    method_preference   VARCHAR(20) DEFAULT 'v60',
+    water_hardness      DECIMAL(4,1) DEFAULT NULL,
+    last_login_at       TIMESTAMP,
+    created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
 ### Coffees Table
 ```sql
 CREATE TABLE coffees (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL,
-    data TEXT NOT NULL,
+    id         SERIAL PRIMARY KEY,
+    user_id    INTEGER NOT NULL,
+    coffee_uid TEXT NOT NULL,
+    data       TEXT NOT NULL,
+    method     VARCHAR(20) DEFAULT 'v60',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(user_id, coffee_uid)
 );
 ```
+
+### Additional Tables
+- `whitelist` — beta access email whitelist
+- `registrations` — pending registration tokens
+- `magic_link_tokens` — one-time login link tokens (15 min expiry)
+- `ai_scan_usage_daily` — per-user daily AI scan counter
 
 ---
 
 ## Grinder Values
 
-The `grinder_preference` field accepts two values:
+The `grinder_preference` field accepts the following values:
 
-| Value | Description | Grind Format |
-|-------|-------------|--------------|
-| `fellow` | Fellow Ode Gen 2 | Decimal (e.g., "3.5") |
-| `comandante` | Comandante C40 MK3 | Clicks (e.g., "22 clicks") |
+| Value | Description |
+|-------|-------------|
+| `fellow_gen2` | Fellow Ode Gen 2 (default) |
+| `fellow_gen1` | Fellow Ode Gen 1 |
+| `comandante_mk4` | Comandante C40 MK4 |
+| `comandante_mk3` | Comandante C40 MK3 |
+| `timemore_s3` | Timemore Chestnut S3 |
+| `timemore_c2` | Timemore Chestnut C2 |
+| `1zpresso` | 1Zpresso |
+| `baratza` | Baratza Encore |
 
-Default value is `fellow`.
+## Method Values
+
+The `method_preference` field accepts: `v60`, `chemex`, `aeropress`.
 
 ---
 
@@ -633,51 +695,36 @@ Required for deployment:
 ```env
 # Required
 ANTHROPIC_API_KEY=sk-ant-xxxxx
+RESEND_API_KEY=re_xxxxx
 
-# Required for CORS
-ALLOWED_ORIGINS=https://your-frontend.vercel.app,https://another-domain.com
+# Required in production
+DATABASE_URL=postgresql://user:pass@host:5432/db
+ALLOWED_ORIGINS=https://dripmate.app,https://dripmate.vercel.app
+FRONTEND_URL=https://dripmate.app
 
 # Optional
 NODE_ENV=production
-DATABASE_URL=postgresql://user:pass@host:5432/db  # For PostgreSQL
-DATABASE_PATH=./dripmate.db                        # For SQLite
+DATABASE_PATH=./db/dripmate.db   # SQLite only (development)
 PORT=3000
+ADMIN_PASSWORD=your-admin-secret  # For whitelist management
 ```
 
 ---
 
-## Migration Guide (v3.0 → v4.0)
+## Migration Guide (v5.0 → v5.4)
 
-### Database Migration
-
-For existing databases, add the grinder preference column:
-
-**PostgreSQL:**
-```sql
-ALTER TABLE users 
-ADD COLUMN IF NOT EXISTS grinder_preference TEXT DEFAULT 'fellow';
-```
-
-**SQLite:**
-```sql
-ALTER TABLE users 
-ADD COLUMN grinder_preference TEXT DEFAULT 'fellow';
-```
-
-### Frontend Changes
-
-Update your frontend to:
-1. Fetch grinder preference on login
-2. Sync grinder changes to backend
-3. Use global grinder state instead of per-coffee state
+All schema migrations run automatically on server startup via `initDatabase()`. No manual SQL required. Key changes:
+- Transactions now use `withTransaction()` instead of `beginTransaction()`/`commit()`/`rollback()`
+- PATCH `/api/brews/:id` uses direct O(1) update instead of full-rewrite
+- AI analysis returns differentiated `errorCode` values
+- `POST /api/auth/email` now requires device binding (both `Authorization` and `X-Device-ID` headers)
 
 ---
 
 ## Support
 
 For issues or questions:
-- GitHub: [Your Repository]
-- Email: [Your Email]
+- GitHub: [dripmate-backend](https://github.com/Meekazoid/dripmate-backend)
 
-**Version:** 4.0.0  
-**Last Updated:** February 6, 2026
+**Version:** 5.4.0  
+**Last Updated:** March 18, 2026

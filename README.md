@@ -1,6 +1,6 @@
-# BrewBuddy Backend API
+# dripmate Backend API
 
-A coffee brewing assistant backend API with AI-powered coffee bag analysis using Claude AI.
+A specialty coffee brewing assistant backend API with AI-powered coffee bag analysis using Claude AI.
 
 ## 🚀 Features
 
@@ -26,8 +26,8 @@ A coffee brewing assistant backend API with AI-powered coffee bag analysis using
 
 1. **Clone the repository** (already done if you're reading this!)
    ```bash
-   git clone https://github.com/Meekazoid/brewbuddy-backend.git
-   cd brewbuddy-backend
+   git clone https://github.com/Meekazoid/dripmate-backend.git
+   cd dripmate-backend
    ```
 
 2. **Install dependencies**
@@ -73,10 +73,14 @@ npm run test:watch
 ```
 
 ### Current Test Status
-✅ All 48 tests passing across 3 test suites:
+✅ All 72 tests passing across 7 test suites:
 - Database operations
-- Authentication and transactions
+- Authentication and transactions (incl. `withTransaction`)
 - Input sanitization
+- AI analysis response parsing
+- Magic link redemption
+- Analyze error code coverage
+- Concurrency stress tests
 
 ## 📚 API Documentation
 
@@ -90,20 +94,22 @@ See [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) for complete API reference in
 ## 🏗️ Project Structure
 
 ```
-brewbuddy-backend/
+dripmate-backend/
 ├── __tests__/              # Test files
 ├── db/                     # Database setup and queries
 ├── middleware/             # Express middleware (auth)
 ├── routes/                 # API route handlers
 │   ├── analyze.js         # AI coffee analysis
-│   ├── auth.js            # Authentication
-│   ├── brews.js           # Brew tracking
+│   ├── auth.js            # Authentication + magic links
+│   ├── brews.js           # Brew tracking (card editor)
 │   ├── coffees.js         # Coffee management
 │   ├── grinder.js         # Grinder preferences
 │   ├── health.js          # Health check
 │   ├── method.js          # Brew method preferences
+│   ├── register.js        # Beta registration
+│   ├── admin.js           # Whitelist management
 │   └── waterHardness.js   # Water hardness settings
-├── utils/                  # Utility functions
+├── utils/                  # Utility functions (sanitize, analyzeResponse)
 ├── server.js              # Main server file
 ├── package.json           # Dependencies and scripts
 └── .env.example           # Environment variables template
@@ -123,7 +129,7 @@ brewbuddy-backend/
 ## 🗄️ Database
 
 ### Development (SQLite)
-Database file is automatically created at `./db/brewbuddy.db`
+Database file is automatically created at `./db/dripmate.db`
 
 ### Production (PostgreSQL)
 Set `DATABASE_URL` in environment variables:
@@ -147,24 +153,30 @@ DATABASE_URL=postgresql://user:password@host:5432/dbname
 ### Optional Dependencies
 - **sqlite3** & **sqlite**: SQLite database support (automatically used in development mode)
 
-## 🔄 Recent Updates (v5.0)
+## 🔄 Recent Updates (v5.4)
 
-See [RELEASE_NOTES_v5.0.md](./RELEASE_NOTES_v5.0.md) for detailed information about:
-- Header-based authentication implementation
-- Database transaction support
-- Production CORS warning system
-- Security improvements
+See [RELEASE_NOTES_v5.4.md](./RELEASE_NOTES_v5.4.md) for detailed information about:
+- Connection-safe transaction isolation (`withTransaction`)
+- SQLite concurrency serialization
+- PATCH endpoint O(1) optimization
+- Anthropic API differentiated error handling
+- Security hardening (device binding on email endpoint)
+- Startup performance improvements
+- Comprehensive integration test coverage
 
 ## 📝 Environment Variables Reference
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `ANTHROPIC_API_KEY` | Yes | - | Anthropic API key for Claude AI |
+| `RESEND_API_KEY` | Yes | - | Resend API key for magic link emails |
 | `NODE_ENV` | No | `development` | Environment mode |
 | `PORT` | No | `3000` | Server port |
 | `DATABASE_URL` | Production only | - | PostgreSQL connection string |
-| `DATABASE_PATH` | No | `./db/brewbuddy.db` | SQLite database path |
+| `DATABASE_PATH` | No | `./db/dripmate.db` | SQLite database path |
 | `ALLOWED_ORIGINS` | Recommended | - | Comma-separated CORS origins |
+| `FRONTEND_URL` | Production | `https://dripmate.app` | Frontend URL for magic link emails |
+| `ADMIN_PASSWORD` | Optional | - | Password for admin whitelist endpoints |
 
 ## 🤝 Contributing
 
@@ -183,7 +195,7 @@ This project is licensed under the MIT License.
 For issues or questions:
 - Open an issue on GitHub
 - Check the [API Documentation](./API_DOCUMENTATION.md)
-- Review the [Release Notes](./RELEASE_NOTES_v5.0.md)
+- Review the [Release Notes](./RELEASE_NOTES_v5.4.md)
 
 ## 🎯 Quick Start Checklist
 
@@ -196,17 +208,20 @@ For issues or questions:
 
 ## 🌟 Features Overview
 
-### Current Version: 5.2.0
+### Current Version: 5.4.0
 - ✅ User authentication with device binding
-- ✅ Coffee inventory management
-- ✅ AI-powered coffee bag analysis
-- ✅ Brew session tracking
+- ✅ Magic link account recovery via email
+- ✅ Coffee inventory management with offline-first sync
+- ✅ AI-powered coffee bag analysis (Claude Sonnet 4)
+- ✅ Brew session tracking with card editor
 - ✅ Grinder preferences (8 grinders supported)
 - ✅ Brew method preferences (V60, Chemex, AeroPress)
 - ✅ Water hardness tracking
 - ✅ Header-based secure authentication
-- ✅ Database transactions for data integrity
-- ✅ Comprehensive test coverage
+- ✅ Connection-safe database transactions (`withTransaction`)
+- ✅ Per-user daily AI scan quota (5/day)
+- ✅ Differentiated AI error codes for frontend handling
+- ✅ Comprehensive test coverage (72 tests, 7 suites)
 
 ---
 
