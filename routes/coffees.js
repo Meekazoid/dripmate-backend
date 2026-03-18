@@ -189,11 +189,23 @@ router.post('/', authenticateUser, async (req, res) => {
                     [req.user.id, keepCoffeeUids]
                 );
             } else {
-                const placeholders = keepCoffeeUids.map(() => '?').join(', ');
+                // SQLite: use temp table to avoid the 999-variable placeholder limit.
+                // Safe within withTransaction — SQLite serializes all TX access.
+                const BATCH = 500;
+                await tx.run(`CREATE TEMP TABLE IF NOT EXISTS _keep_uids (uid TEXT)`);
+                await tx.run(`DELETE FROM _keep_uids`);
+                for (let i = 0; i < keepCoffeeUids.length; i += BATCH) {
+                    const batch = keepCoffeeUids.slice(i, i + BATCH);
+                    await tx.run(
+                        `INSERT INTO _keep_uids (uid) VALUES ${batch.map(() => '(?)').join(',')}`,
+                        batch
+                    );
+                }
                 await tx.run(
-                    `DELETE FROM coffees WHERE user_id = ? AND coffee_uid NOT IN (${placeholders})`,
-                    [req.user.id, ...keepCoffeeUids]
+                    `DELETE FROM coffees WHERE user_id = ? AND coffee_uid NOT IN (SELECT uid FROM _keep_uids)`,
+                    [req.user.id]
                 );
+                await tx.run(`DROP TABLE IF EXISTS _keep_uids`);
             }
 
             return coffees?.length || 0;
