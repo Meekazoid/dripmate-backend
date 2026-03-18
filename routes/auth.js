@@ -5,7 +5,7 @@
 import express    from 'express';
 import crypto     from 'crypto';
 import { Resend } from 'resend';
-import { extractAuthCredentials, getDeviceInfo } from '../middleware/auth.js';
+import { extractAuthCredentials, authenticateUser, getDeviceInfo } from '../middleware/auth.js';
 import { queries } from '../db/database.js';
 
 const router = express.Router();
@@ -136,23 +136,21 @@ router.get('/validate', async (req, res) => {
  * Save Email
  * POST /api/auth/email
  * Body: { email }
- * Header: Authorization: Bearer <token>
+ * Header: Authorization: Bearer <token>, X-Device-ID: <deviceId>
+ *
+ * Uses authenticateUser middleware to enforce device binding.
+ * This prevents an attacker with a stolen token (but wrong device)
+ * from changing the recovery email and hijacking the account.
  */
-router.post('/email', async (req, res) => {
+router.post('/email', authenticateUser, async (req, res) => {
     try {
-        const { token } = extractAuthCredentials(req);
-        if (!token) return res.status(401).json({ success: false, error: 'Unauthorized' });
-
-        const user = await queries.getUserByToken(token);
-        if (!user)  return res.status(401).json({ success: false, error: 'Invalid token' });
-
         const { email } = req.body;
         if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             return res.status(400).json({ success: false, error: 'Valid email required' });
         }
 
-        await queries.setUserEmail(user.id, email);
-        console.log(`[OK] Email saved for user ${user.username}: ${email}`);
+        await queries.setUserEmail(req.user.id, email);
+        console.log(`[OK] Email saved for user ${req.user.username}: ${email}`);
 
         res.json({ success: true, email: email.toLowerCase().trim() });
 
