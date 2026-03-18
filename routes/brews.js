@@ -5,15 +5,17 @@
 
 import express from 'express';
 import { authenticateUser } from '../middleware/auth.js';
-import { queries, beginTransaction, commit, rollback } from '../db/database.js';
-import { sanitizeCoffeeData } from '../utils/sanitize.js'; // <-- GEÄNDERT: Wir nutzen jetzt unseren zentralen Türsteher
+import { queries } from '../db/database.js';
+import { sanitizeCoffeeData } from '../utils/sanitize.js';
 
 const router = express.Router();
 
 /**
  * Partial update a coffee card.
- * Merges incoming updates with the existing coffee object and sanitizes it
- * against the canonical schema before saving.
+ *
+ * V5.4: Rewrote from O(n) full-rewrite (load all → delete all → re-insert all)
+ * to O(1) direct update via getCoffeeByUid + updateCoffeeByUid.
+ * No transaction needed — it's a single atomic UPDATE statement.
  */
 router.patch('/:id', authenticateUser, async (req, res) => {
     try {
@@ -28,71 +30,29 @@ router.patch('/:id', authenticateUser, async (req, res) => {
             });
         }
 
-        // Load all of the user's coffees from the DB
-        const userCoffees = await queries.getUserCoffees(userId);
+        // 1. Load only the target coffee — O(1) instead of loading all coffees
+        const row = await queries.getCoffeeByUid(userId, id);
 
-        if (!userCoffees || userCoffees.length === 0) {
-            return res.status(404).json({
-                success: false,
-                error: 'No coffees found for user'
-            });
-        }
-
-        // Parse rows and locate the target coffee by its stable coffee_uid
-        let coffeeIndex = -1;
-        const parsedCoffees = userCoffees.map((row, idx) => {
-            const data = typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
-            const entry = { ...data, _uid: row.coffee_uid, _method: row.method };
-
-            if (String(row.coffee_uid) === String(id) || String(idx) === String(id)) {
-                coffeeIndex = idx;
-            }
-
-            return entry;
-        });
-
-        if (coffeeIndex === -1) {
+        if (!row) {
             return res.status(404).json({
                 success: false,
                 error: 'Coffee not found'
             });
         }
 
-        // 1. Hole den bestehenden Kaffee
-        const existingCoffee = parsedCoffees[coffeeIndex];
+        // 2. Parse existing data and merge with updates
+        const existing = typeof row.data === 'string' ? JSON.parse(row.data) : row.data;
+        const merged = { ...existing, ...updates };
 
-        // 2. Mische bestehende Daten mit den neuen Updates aus dem Editor
-        const mergedCoffee = { ...existingCoffee, ...updates };
+        // 3. Sanitize the merged object
+        const finalCoffeeData = sanitizeCoffeeData(merged);
 
-        // 3. Systemfelder temporär abtrennen, damit sie nicht versehentlich wegsanitisiert werden
-        const { _uid, _method, ...dataToSanitize } = mergedCoffee;
-        
-        // 4. Jage das komplett gemergte Objekt durch unseren strikten Türsteher
-        const finalCoffeeData = sanitizeCoffeeData(dataToSanitize);
-
-        // 5. Systemfelder für den Speichervorgang wieder anheften
-        parsedCoffees[coffeeIndex] = { ...finalCoffeeData, _uid, _method };
-
-        // Atomically rewrite the full coffee array
-        await beginTransaction();
-        try {
-            await queries.deleteUserCoffees(userId);
-
-            for (const c of parsedCoffees) {
-                // Systemfelder vor dem Speichern wieder entfernen
-                const { _uid, _method, ...dataToSave } = c;
-                await queries.saveCoffee(userId, _uid, JSON.stringify(dataToSave), _method || 'v60');
-            }
-
-            await commit();
-        } catch (txError) {
-            await rollback();
-            throw txError;
-        }
+        // 4. Direct single-row update — O(1) instead of delete-all + re-insert-all
+        const method = updates.method || row.method || 'v60';
+        await queries.updateCoffeeByUid(userId, id, JSON.stringify(finalCoffeeData), method);
 
         console.log(`[OK] PATCH /api/brews/${id} updated successfully (user: ${req.user.username})`);
 
-        // Sende dem Frontend exakt das saubere, gespeicherte Objekt zurück
         res.json({
             success: true,
             coffee: finalCoffeeData

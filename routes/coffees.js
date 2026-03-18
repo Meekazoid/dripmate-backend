@@ -5,7 +5,7 @@
 import express from 'express';
 import crypto from 'crypto';
 import { authenticateUser } from '../middleware/auth.js';
-import { queries, beginTransaction, commit, rollback } from '../db/database.js';
+import { queries, withTransaction, getDatabaseType } from '../db/database.js';
 import { sanitizeCoffeeData } from '../utils/sanitize.js';
 
 const router = express.Router();
@@ -141,10 +141,7 @@ router.post('/', authenticateUser, async (req, res) => {
     try {
         const { coffees } = req.body;
 
-        // Start transaction to ensure atomic upsert+cleanup operation
-        await beginTransaction();
-
-        try {
+        const saved = await withTransaction(async (tx) => {
             const keepCoffeeUids = [];
 
             if (coffees && coffees.length > 0) {
@@ -160,26 +157,49 @@ router.post('/', authenticateUser, async (req, res) => {
 
                     // Sanitize each coffee object before storing
                     const sanitized = sanitizeCoffeeData(preNormalized);
-                    await queries.saveCoffee(req.user.id, uid, JSON.stringify(sanitized));
+
+                    // Upsert via the transaction's connection
+                    if (getDatabaseType() === 'postgresql') {
+                        await tx.get(
+                            `INSERT INTO coffees (user_id, coffee_uid, data, method)
+                             VALUES ($1, $2, $3, $4)
+                             ON CONFLICT(user_id, coffee_uid)
+                             DO UPDATE SET data = EXCLUDED.data, method = EXCLUDED.method, created_at = CURRENT_TIMESTAMP
+                             RETURNING id`,
+                            [req.user.id, uid, JSON.stringify(sanitized), sanitized.method || 'v60']
+                        );
+                    } else {
+                        await tx.run(
+                            `INSERT INTO coffees (user_id, coffee_uid, data, method)
+                             VALUES ($1, $2, $3, $4)
+                             ON CONFLICT(user_id, coffee_uid)
+                             DO UPDATE SET data = excluded.data, method = excluded.method, created_at = CURRENT_TIMESTAMP`,
+                            [req.user.id, uid, JSON.stringify(sanitized), sanitized.method || 'v60']
+                        );
+                    }
                 }
             }
 
-            // Remove coffees that are no longer part of this payload.
-            await queries.replaceUserCoffees(req.user.id, keepCoffeeUids);
+            // Remove coffees that are no longer part of this payload
+            if (keepCoffeeUids.length === 0) {
+                await tx.run(`DELETE FROM coffees WHERE user_id = $1`, [req.user.id]);
+            } else if (getDatabaseType() === 'postgresql') {
+                await tx.run(
+                    `DELETE FROM coffees WHERE user_id = $1 AND coffee_uid <> ALL($2::text[])`,
+                    [req.user.id, keepCoffeeUids]
+                );
+            } else {
+                const placeholders = keepCoffeeUids.map(() => '?').join(', ');
+                await tx.run(
+                    `DELETE FROM coffees WHERE user_id = ? AND coffee_uid NOT IN (${placeholders})`,
+                    [req.user.id, ...keepCoffeeUids]
+                );
+            }
 
-            // Commit transaction if all operations succeeded
-            await commit();
+            return coffees?.length || 0;
+        });
 
-            res.json({
-                success: true,
-                saved: coffees?.length || 0
-            });
-
-        } catch (txError) {
-            // Rollback transaction if any operation failed
-            await rollback();
-            throw txError;
-        }
+        res.json({ success: true, saved });
 
     } catch (error) {
         console.error('Save coffees error:', error.message);
