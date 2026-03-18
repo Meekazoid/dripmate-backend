@@ -494,6 +494,80 @@ export function getDatabaseType() {
 // TRANSACTIONS
 // ==========================================
 
+/**
+ * Execute a function inside a database transaction with proper connection isolation.
+ *
+ * PostgreSQL: acquires a dedicated client from the pool so BEGIN/COMMIT/ROLLBACK
+ * all run on the same connection. The old beginTransaction()/commit()/rollback()
+ * used pool.query() which could route each call to a different connection —
+ * breaking transaction isolation under concurrent requests.
+ *
+ * SQLite: uses the single connection (serialized by nature).
+ *
+ * The callback receives a `run` helper that works like `q('run', ...)` but is
+ * bound to the transaction's connection. For read queries inside the transaction,
+ * use `tx.get(sql, params)` and `tx.all(sql, params)`.
+ *
+ * @param {(tx: {run, get, all}) => Promise<T>} fn
+ * @returns {Promise<T>}
+ */
+export async function withTransaction(fn) {
+    if (dbType === 'sqlite') {
+        const conn = getDatabase();
+        await conn.exec('BEGIN TRANSACTION');
+        try {
+            const tx = {
+                run(pgSql, params = []) {
+                    return conn.run(pgSql.replace(/\$\d+/g, '?'), params);
+                },
+                get(pgSql, params = []) {
+                    return conn.get(pgSql.replace(/\$\d+/g, '?'), params);
+                },
+                all(pgSql, params = []) {
+                    return conn.all(pgSql.replace(/\$\d+/g, '?'), params);
+                }
+            };
+            const result = await fn(tx);
+            await conn.exec('COMMIT');
+            return result;
+        } catch (err) {
+            await conn.exec('ROLLBACK');
+            throw err;
+        }
+    }
+
+    // PostgreSQL: dedicated client from pool
+    const client = await getDatabase().pool.connect();
+    try {
+        await client.query('BEGIN');
+        const tx = {
+            async run(sql, params = []) {
+                const result = await client.query(sql, params);
+                return { lastID: result.rows[0]?.id, changes: result.rowCount };
+            },
+            async get(sql, params = []) {
+                const result = await client.query(sql, params);
+                return result.rows[0] || null;
+            },
+            async all(sql, params = []) {
+                const result = await client.query(sql, params);
+                return result.rows;
+            }
+        };
+        const result = await fn(tx);
+        await client.query('COMMIT');
+        return result;
+    } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+    } finally {
+        client.release();
+    }
+}
+
+// Legacy transaction functions — DEPRECATED.
+// Kept temporarily for backward compatibility with tests.
+// Use withTransaction() for all new code.
 export async function beginTransaction() {
     const conn = getDatabase();
     if (dbType === 'postgresql') {
@@ -688,6 +762,34 @@ export const queries = {
 
     async deleteUserCoffees(userId) {
         return q('run', `DELETE FROM coffees WHERE user_id = $1`, [userId]);
+    },
+
+    /**
+     * Fetch a single coffee by its stable UID for a given user.
+     * Used by PATCH /api/brews/:id to avoid loading all coffees.
+     */
+    async getCoffeeByUid(userId, coffeeUid) {
+        return q('get',
+            `SELECT id, coffee_uid, data, method, created_at FROM coffees WHERE user_id = $1 AND coffee_uid = $2`,
+            [userId, coffeeUid]
+        );
+    },
+
+    /**
+     * Update a single coffee's data (and optionally method) by its stable UID.
+     * O(1) instead of the previous delete-all + re-insert-all approach.
+     */
+    async updateCoffeeByUid(userId, coffeeUid, newData, method = null) {
+        if (method) {
+            return q('run',
+                `UPDATE coffees SET data = $1, method = $2 WHERE user_id = $3 AND coffee_uid = $4`,
+                [newData, method, userId, coffeeUid]
+            );
+        }
+        return q('run',
+            `UPDATE coffees SET data = $1 WHERE user_id = $2 AND coffee_uid = $3`,
+            [newData, userId, coffeeUid]
+        );
     },
 
     // ------------------------------------------
@@ -890,6 +992,7 @@ export default {
     getDatabase,
     getDatabaseType,
     closeDatabase,
+    withTransaction,
     beginTransaction,
     commit,
     rollback,
