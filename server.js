@@ -8,7 +8,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
-import { initDatabase } from './db/database.js';
+import { initDatabase, queries as dbQueries } from './db/database.js';
 import authRoutes from './routes/auth.js';
 import grinderRoutes from './routes/grinder.js';
 import methodRoutes from './routes/method.js';
@@ -130,6 +130,13 @@ console.log('[OK] Rate limiting: 100 req/15min (general), 10 req/hour (AI analyz
 
 try {
     await initDatabase();
+    // Housekeeping: remove expired/used magic link tokens on every startup
+    try {
+        await dbQueries.cleanupExpiredMagicTokens();
+        console.log('[OK] Expired magic link tokens cleaned up');
+    } catch (cleanupErr) {
+        console.warn('[WARN] Magic token cleanup failed (non-fatal):', cleanupErr.message);
+    }
 } catch (err) {
     console.error('[ERROR] Database initialization failed:', err.message);
     process.exit(1);
