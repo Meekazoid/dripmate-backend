@@ -598,36 +598,6 @@ export async function withTransaction(fn) {
     }
 }
 
-// Legacy transaction functions — DEPRECATED.
-// Kept temporarily for backward compatibility with tests.
-// Use withTransaction() for all new code.
-export async function beginTransaction() {
-    const conn = getDatabase();
-    if (dbType === 'postgresql') {
-        await conn.pool.query('BEGIN');
-    } else {
-        await conn.exec('BEGIN TRANSACTION');
-    }
-}
-
-export async function commit() {
-    const conn = getDatabase();
-    if (dbType === 'postgresql') {
-        await conn.pool.query('COMMIT');
-    } else {
-        await conn.exec('COMMIT');
-    }
-}
-
-export async function rollback() {
-    const conn = getDatabase();
-    if (dbType === 'postgresql') {
-        await conn.pool.query('ROLLBACK');
-    } else {
-        await conn.exec('ROLLBACK');
-    }
-}
-
 export async function closeDatabase() {
     if (_db && dbType === 'postgresql') {
         await _db.pool.end();
@@ -1027,9 +997,6 @@ export default {
     getDatabaseType,
     closeDatabase,
     withTransaction,
-    beginTransaction,
-    commit,
-    rollback,
     queries,
     VALID_GRINDERS,
     VALID_METHODS
