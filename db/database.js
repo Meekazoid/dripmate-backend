@@ -495,45 +495,62 @@ export function getDatabaseType() {
 // ==========================================
 
 /**
+ * Simple promise-based mutex for SQLite transaction serialization.
+ * SQLite only supports one active transaction at a time on a single connection.
+ * Without this, concurrent requests cause "cannot start a transaction within a transaction".
+ * Not needed for PostgreSQL (pool.connect() gives each caller its own connection).
+ */
+let _sqliteTxQueue = Promise.resolve();
+
+/**
  * Execute a function inside a database transaction with proper connection isolation.
  *
  * PostgreSQL: acquires a dedicated client from the pool so BEGIN/COMMIT/ROLLBACK
- * all run on the same connection. The old beginTransaction()/commit()/rollback()
- * used pool.query() which could route each call to a different connection —
- * breaking transaction isolation under concurrent requests.
+ * all run on the same connection.
  *
- * SQLite: uses the single connection (serialized by nature).
+ * SQLite: serializes transactions via a promise queue so only one transaction
+ * runs at a time. Concurrent callers wait their turn automatically.
  *
- * The callback receives a `run` helper that works like `q('run', ...)` but is
- * bound to the transaction's connection. For read queries inside the transaction,
- * use `tx.get(sql, params)` and `tx.all(sql, params)`.
+ * The callback receives a `tx` object with `tx.run()`, `tx.get()`, `tx.all()`
+ * — all bound to the transaction's connection and auto-converting $N placeholders
+ * to ? for SQLite.
  *
  * @param {(tx: {run, get, all}) => Promise<T>} fn
  * @returns {Promise<T>}
  */
 export async function withTransaction(fn) {
     if (dbType === 'sqlite') {
-        const conn = getDatabase();
-        await conn.exec('BEGIN TRANSACTION');
-        try {
-            const tx = {
-                run(pgSql, params = []) {
-                    return conn.run(pgSql.replace(/\$\d+/g, '?'), params);
-                },
-                get(pgSql, params = []) {
-                    return conn.get(pgSql.replace(/\$\d+/g, '?'), params);
-                },
-                all(pgSql, params = []) {
-                    return conn.all(pgSql.replace(/\$\d+/g, '?'), params);
-                }
-            };
-            const result = await fn(tx);
-            await conn.exec('COMMIT');
-            return result;
-        } catch (err) {
-            await conn.exec('ROLLBACK');
-            throw err;
-        }
+        const runTx = async () => {
+            const conn = getDatabase();
+            await conn.exec('BEGIN TRANSACTION');
+            try {
+                const tx = {
+                    run(pgSql, params = []) {
+                        return conn.run(pgSql.replace(/\$\d+/g, '?'), params);
+                    },
+                    get(pgSql, params = []) {
+                        return conn.get(pgSql.replace(/\$\d+/g, '?'), params);
+                    },
+                    all(pgSql, params = []) {
+                        return conn.all(pgSql.replace(/\$\d+/g, '?'), params);
+                    }
+                };
+                const result = await fn(tx);
+                await conn.exec('COMMIT');
+                return result;
+            } catch (err) {
+                try { await conn.exec('ROLLBACK'); } catch (_) { /* ignore rollback errors */ }
+                throw err;
+            }
+        };
+
+        // Chain onto the queue — .then(runTx, runTx) ensures the next TX runs
+        // regardless of whether the previous one succeeded or failed.
+        const job = _sqliteTxQueue.then(runTx, runTx);
+        // Keep the queue healthy: swallow errors so the next caller isn't blocked.
+        _sqliteTxQueue = job.catch(() => {});
+        // Return the actual job so the caller sees success/failure of *their* TX.
+        return job;
     }
 
     // PostgreSQL: dedicated client from pool
@@ -605,6 +622,7 @@ export async function closeDatabase() {
     }
     _db    = null;
     dbType = null;
+    _sqliteTxQueue = Promise.resolve();
 }
 
 
