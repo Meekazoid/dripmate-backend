@@ -3,26 +3,62 @@
 // ==========================================
 
 import express from 'express';
+import crypto from 'crypto';
 import { queries } from '../db/database.js';
 
 const router = express.Router();
 
 // ==========================================
+// SESSION TOKEN STORE
+// ==========================================
+
+const SESSION_TTL_MS = 8 * 60 * 60 * 1000; // 8 hours
+const sessions = new Map(); // token → expiresAt
+
+function createSession() {
+    const token = crypto.randomBytes(32).toString('hex');
+    sessions.set(token, Date.now() + SESSION_TTL_MS);
+    return token;
+}
+
+function isValidSession(token) {
+    if (!token) return false;
+    const expiresAt = sessions.get(token);
+    if (!expiresAt) return false;
+    if (Date.now() > expiresAt) {
+        sessions.delete(token);
+        return false;
+    }
+    return true;
+}
+
+// ==========================================
 // ADMIN AUTH MIDDLEWARE
 // ==========================================
 
-/**
- * Simple password-based admin guard.
- * Reads the ADMIN_PASSWORD env var and compares it against the X-Admin-Password header.
- * All admin routes are internal-use only — no user-facing access.
- */
 function adminAuth(req, res, next) {
+    const token = req.headers['x-admin-token'];
+    if (isValidSession(token)) return next();
+
+    // Fallback: direct password header for backwards compatibility
     const pw = req.headers['x-admin-password'];
-    if (!pw || pw !== process.env.ADMIN_PASSWORD) {
+    if (pw && pw === process.env.ADMIN_PASSWORD) return next();
+
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
+}
+
+// ==========================================
+// POST /api/admin/login
+// ==========================================
+
+router.post('/login', (req, res) => {
+    const { password } = req.body;
+    if (!password || password !== process.env.ADMIN_PASSWORD) {
         return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
-    next();
-}
+    const token = createSession();
+    res.json({ success: true, token });
+});
 
 // ==========================================
 // GET /api/admin/whitelist
