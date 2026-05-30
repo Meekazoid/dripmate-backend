@@ -124,6 +124,19 @@ export function buildTokenEmail(email, token, frontendUrl) {
                                 </td>
                             </tr>
 
+                            <!-- Legal footer -->
+                            <tr>
+                                <td style="padding-top:12px;text-align:center;border-top:1px solid #eeeeee;margin-top:12px;">
+                                    <p style="margin:0;font-size:0.62rem;color:#cccccc;line-height:1.8;">
+                                        <a href="https://dripmate.app/impressum.html"
+                                           style="color:#aaaaaa;text-decoration:none;">Impressum</a>
+                                        &nbsp;·&nbsp;
+                                        <a href="https://dripmate.app/datenschutz.html"
+                                           style="color:#aaaaaa;text-decoration:none;">Datenschutz</a>
+                                    </p>
+                                </td>
+                            </tr>
+
                         </table>
                     </td>
                 </tr>
