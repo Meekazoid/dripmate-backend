@@ -150,6 +150,29 @@ router.delete('/whitelist/:id', adminAuth, async (req, res) => {
 });
 
 // ==========================================
+// DELETE /api/admin/purge
+// PURGE = irreversible full removal across users(+cascade), registrations, whitelist, waitlist.
+// Frees a beta slot. Distinct from whitelist-only DELETE /api/admin/whitelist/:id.
+// ==========================================
+
+router.delete('/purge', adminAuth, async (req, res) => {
+    const { email } = req.body;
+
+    if (!email || !email.includes('@')) {
+        return res.status(400).json({ success: false, error: 'Invalid email address' });
+    }
+
+    try {
+        const result = await queries.purgeUserByEmail(email);
+        console.log(`[OK] Admin PURGE: fully removed ${result.email} (hadAccount=${result.hadAccount})`);
+        res.json({ success: true, ...result });
+    } catch (err) {
+        console.error('[ERROR] DELETE /admin/purge:', err.message);
+        res.status(500).json({ success: false, error: 'Server error' });
+    }
+});
+
+// ==========================================
 // GET /api/admin/waitlist
 // List all waitlist entries.
 // ==========================================

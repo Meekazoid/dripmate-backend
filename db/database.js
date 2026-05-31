@@ -1041,6 +1041,52 @@ export const queries = {
         return q('run', `DELETE FROM whitelist WHERE id = $1`, [id]);
     },
 
+    /**
+     * Irreversible full purge of a person across every relevant table.
+     * Runs in a single transaction so the operation is atomic.
+     *
+     * Cascade note (verified in schema):
+     *   DELETE users  →  automatically cascades coffees, magic_link_tokens, ai_scan_usage_daily.
+     *   registrations, whitelist, waitlist_emails have no FK — deleted explicitly below.
+     *
+     * @param {string} email
+     * @returns {Promise<{ email: string, hadAccount: boolean, deletedFrom: string[] }>}
+     */
+    async purgeUserByEmail(email) {
+        const normalizedEmail = email.toLowerCase().trim();
+
+        return withTransaction(async (tx) => {
+            const deletedFrom = [];
+
+            // 1. Look up user by email
+            const user = await tx.get(
+                `SELECT id FROM users WHERE email = $1`,
+                [normalizedEmail]
+            );
+            const hadAccount = !!user;
+
+            if (user) {
+                // DELETE cascades → coffees, magic_link_tokens, ai_scan_usage_daily
+                await tx.run(`DELETE FROM users WHERE id = $1`, [user.id]);
+                deletedFrom.push('users', 'coffees', 'magic_link_tokens', 'ai_scan_usage_daily');
+            }
+
+            // 2. Delete registration (no FK — explicit)
+            const regDel = await tx.run(`DELETE FROM registrations WHERE email = $1`, [normalizedEmail]);
+            if (regDel.changes > 0) deletedFrom.push('registrations');
+
+            // 3. Delete whitelist entry (no FK — explicit)
+            const wlDel = await tx.run(`DELETE FROM whitelist WHERE email = $1`, [normalizedEmail]);
+            if (wlDel.changes > 0) deletedFrom.push('whitelist');
+
+            // 4. Delete waitlist entry if present (no FK — explicit)
+            const waitDel = await tx.run(`DELETE FROM waitlist_emails WHERE email = $1`, [normalizedEmail]);
+            if (waitDel.changes > 0) deletedFrom.push('waitlist_emails');
+
+            return { email: normalizedEmail, hadAccount, deletedFrom };
+        });
+    },
+
     async countWhitelist() {
         const result = await q('get', `SELECT COUNT(*) as count FROM whitelist`);
         return parseInt(result.count);
