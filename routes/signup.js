@@ -7,6 +7,7 @@ import express from 'express';
 import { queries, withTransaction } from '../db/database.js';
 import { generateUniqueToken, sendTokenMail, issueOrResendToken } from '../utils/inviteHelper.js';
 import { buildWaitlistEmail } from '../utils/emailTemplate.js';
+import { stripHTML, truncateString } from '../utils/sanitize.js';
 
 const router = express.Router();
 
@@ -48,13 +49,21 @@ async function sendWaitlistMail(email) {
 // ==========================================
 
 router.post('/', async (req, res) => {
-    const { email } = req.body;
+    const { email, name: rawName = '' } = req.body;
 
     if (!email || !email.includes('@')) {
         return res.status(400).json({ success: false, error: 'Invalid email address' });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
+
+    // Sanitize optional name: strip HTML/entities, remove control characters, cap at 100 chars
+    const name = truncateString(
+        stripHTML(typeof rawName === 'string' ? rawName : '')
+            .replace(/[\r\n\t\x00-\x1F\x7F]/g, ' ')
+            .trim(),
+        100
+    );
 
     try {
         // Already whitelisted → issue or idempotently re-send token (same behaviour as /register)
@@ -86,7 +95,7 @@ router.post('/', async (req, res) => {
                 await tx.run(
                     `INSERT INTO whitelist (email, name, website, note, invite_source)
                      VALUES ($1, $2, $3, $4, $5)`,
-                    [normalizedEmail, '', '', '', 'self_signup']
+                    [normalizedEmail, name, '', '', 'self_signup']
                 );
 
                 tokenForEmail = await generateUniqueToken();
@@ -115,7 +124,7 @@ router.post('/', async (req, res) => {
             return res.json({ status: 'already_waitlisted' });
         }
 
-        await queries.addToWaitlist(normalizedEmail, '');
+        await queries.addToWaitlist(normalizedEmail, '', name);
         await sendWaitlistMail(normalizedEmail);
         console.log(`[OK] /signup: added to waitlist: ${normalizedEmail}`);
         return res.json({ status: 'waitlisted' });

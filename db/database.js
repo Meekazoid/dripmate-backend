@@ -377,6 +377,13 @@ async function runPostgreSQLMigrations() {
         console.log('[DB] Note: waitlist_emails may already exist');
     }
 
+    // name column for waitlist (idempotent — added after initial release)
+    try {
+        await conn.pool.query(`ALTER TABLE waitlist_emails ADD COLUMN IF NOT EXISTS name TEXT DEFAULT ''`);
+    } catch (err) {
+        console.log('[DB] Note: waitlist_emails.name may already exist');
+    }
+
     // Future-proofing columns on whitelist (no logic built on them yet)
     try {
         await conn.pool.query(`ALTER TABLE whitelist ADD COLUMN IF NOT EXISTS invite_source TEXT DEFAULT 'admin'`);
@@ -531,6 +538,7 @@ async function runSQLiteMigrations() {
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
                 email       TEXT UNIQUE NOT NULL,
                 note        TEXT DEFAULT '',
+                name        TEXT DEFAULT '',
                 created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
                 promoted    INTEGER DEFAULT 0,
                 promoted_at DATETIME NULL
@@ -541,6 +549,9 @@ async function runSQLiteMigrations() {
     } catch (_) {
         // already exists
     }
+
+    // name column for waitlist — idempotent add for databases created before this column existed
+    try { await conn.run(`ALTER TABLE waitlist_emails ADD COLUMN name TEXT DEFAULT ''`); } catch (_) { /* already exists */ }
 
     // Future-proofing columns on whitelist (no logic built on them yet)
     const whitelistAlterations = [
@@ -1092,11 +1103,11 @@ export const queries = {
         return parseInt(result.count);
     },
 
-    async addToWaitlist(email, note = '') {
+    async addToWaitlist(email, note = '', name = '') {
         const normalizedEmail = email.toLowerCase().trim();
         return q('run',
-            `INSERT INTO waitlist_emails (email, note) VALUES ($1, $2)`,
-            [normalizedEmail, note]
+            `INSERT INTO waitlist_emails (email, note, name) VALUES ($1, $2, $3)`,
+            [normalizedEmail, note, name]
         );
     },
 
@@ -1107,7 +1118,7 @@ export const queries = {
 
     async getWaitlistWithStatus() {
         return q('all',
-            `SELECT email, note, created_at, promoted, promoted_at FROM waitlist_emails ORDER BY created_at DESC`
+            `SELECT email, name, note, created_at, promoted, promoted_at FROM waitlist_emails ORDER BY created_at DESC`
         );
     },
 
