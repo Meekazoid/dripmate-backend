@@ -398,6 +398,31 @@ async function runPostgreSQLMigrations() {
     } catch (err) {
         console.log('[DB] Note: idx_whitelist_email may already exist');
     }
+
+    // Step 13: App-Feedback (beta tester feedback → grinder/method wish-list)
+    try {
+        await conn.pool.query(`
+            CREATE TABLE IF NOT EXISTS app_feedback (
+                id                  SERIAL PRIMARY KEY,
+                user_id             INTEGER,
+                category            TEXT CHECK (category IN ('bug','wish','praise') OR category IS NULL),
+                message             TEXT NOT NULL,
+                grinder_text        TEXT,
+                method_text         TEXT,
+                grinder_unsupported INTEGER NOT NULL DEFAULT 0,
+                method_unsupported  INTEGER NOT NULL DEFAULT 0,
+                app_version         TEXT,
+                platform            TEXT,
+                status              TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new','seen','done')),
+                created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+            )
+        `);
+        await conn.pool.query(`CREATE INDEX IF NOT EXISTS idx_app_feedback_created_at ON app_feedback (created_at)`);
+        console.log('[DB] app_feedback table ready');
+    } catch (err) {
+        console.log('[DB] Note: app_feedback may already exist');
+    }
 }
 
 // ==========================================
@@ -560,6 +585,31 @@ async function runSQLiteMigrations() {
     ];
     for (const sql of whitelistAlterations) {
         try { await conn.run(sql); } catch (_) { /* column already exists */ }
+    }
+
+    // Step 12: App-Feedback (beta tester feedback → grinder/method wish-list)
+    try {
+        await conn.exec(`
+            CREATE TABLE IF NOT EXISTS app_feedback (
+                id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id             INTEGER,
+                category            TEXT CHECK (category IN ('bug','wish','praise') OR category IS NULL),
+                message             TEXT NOT NULL,
+                grinder_text        TEXT,
+                method_text         TEXT,
+                grinder_unsupported INTEGER NOT NULL DEFAULT 0,
+                method_unsupported  INTEGER NOT NULL DEFAULT 0,
+                app_version         TEXT,
+                platform            TEXT,
+                status              TEXT NOT NULL DEFAULT 'new' CHECK (status IN ('new','seen','done')),
+                created_at          DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_app_feedback_created_at ON app_feedback (created_at);
+        `);
+        console.log('[DB] app_feedback table ready');
+    } catch (_) {
+        // already exists
     }
 }
 
@@ -1153,6 +1203,75 @@ export const queries = {
         return q('run',
             `DELETE FROM magic_link_tokens WHERE used = ${trueVal} OR expires_at < ${timeCheck}`
         );
+    },
+
+    // ------------------------------------------
+    // APP FEEDBACK QUERIES
+    // ------------------------------------------
+
+    async createAppFeedback({ userId = null, category = null, message, grinderText = null, methodText = null, grinderUnsupported = 0, methodUnsupported = 0, appVersion = null, platform = null }) {
+        if (dbType === 'postgresql') {
+            const result = await q('get',
+                `INSERT INTO app_feedback (user_id, category, message, grinder_text, method_text, grinder_unsupported, method_unsupported, app_version, platform)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                 RETURNING id`,
+                [userId, category, message, grinderText, methodText, grinderUnsupported, methodUnsupported, appVersion, platform]
+            );
+            return result.id;
+        } else {
+            const result = await q('run',
+                `INSERT INTO app_feedback (user_id, category, message, grinder_text, method_text, grinder_unsupported, method_unsupported, app_version, platform)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+                [userId, category, message, grinderText, methodText, grinderUnsupported, methodUnsupported, appVersion, platform]
+            );
+            return result.lastID;
+        }
+    },
+
+    async listAppFeedback({ limit = 50, offset = 0, status = null, category = null } = {}) {
+        let sql = `SELECT f.*, u.username FROM app_feedback f LEFT JOIN users u ON u.id = f.user_id`;
+        const params = [];
+        const conditions = [];
+
+        if (status) {
+            conditions.push(`f.status = $${params.length + 1}`);
+            params.push(status);
+        }
+        if (category) {
+            conditions.push(`f.category = $${params.length + 1}`);
+            params.push(category);
+        }
+
+        if (conditions.length > 0) {
+            sql += ' WHERE ' + conditions.join(' AND ');
+        }
+
+        sql += ` ORDER BY f.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+        params.push(limit, offset);
+
+        return q('all', sql, params);
+    },
+
+    async updateAppFeedbackStatus(id, status) {
+        return q('run', `UPDATE app_feedback SET status = $1 WHERE id = $2`, [status, id]);
+    },
+
+    async getAppFeedbackEquipmentRanking() {
+        const grinders = await q('all', `
+            SELECT lower(trim(grinder_text)) AS name, COUNT(*) AS count
+            FROM app_feedback
+            WHERE grinder_text IS NOT NULL AND trim(grinder_text) <> ''
+            GROUP BY lower(trim(grinder_text))
+            ORDER BY count DESC, name ASC
+        `);
+        const methods = await q('all', `
+            SELECT lower(trim(method_text)) AS name, COUNT(*) AS count
+            FROM app_feedback
+            WHERE method_text IS NOT NULL AND trim(method_text) <> ''
+            GROUP BY lower(trim(method_text))
+            ORDER BY count DESC, name ASC
+        `);
+        return { grinders, methods };
     }
 };
 

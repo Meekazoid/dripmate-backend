@@ -220,4 +220,62 @@ router.post('/waitlist/promote', adminAuth, async (req, res) => {
     }
 });
 
+// ==========================================
+// GET /api/admin/app-feedback
+// List app-feedback submissions (filterable by status / category).
+// ==========================================
+
+router.get('/app-feedback', adminAuth, async (req, res) => {
+    try {
+        const limit    = Math.min(parseInt(req.query.limit)  || 50,  200);
+        const offset   = Math.max(parseInt(req.query.offset) || 0,   0);
+        const status   = ['new','seen','done'].includes(req.query.status)     ? req.query.status   : null;
+        const category = ['bug','wish','praise'].includes(req.query.category) ? req.query.category : null;
+
+        const items = await queries.listAppFeedback({ limit, offset, status, category });
+        res.json({ success: true, items });
+    } catch (err) {
+        console.error('[ERROR] GET /admin/app-feedback:', err.message);
+        res.status(500).json({ success: false, error: 'Server error' });
+    }
+});
+
+// ==========================================
+// GET /api/admin/app-feedback/rankings
+// Grinder + method wish-list ranking (rough count, lower+trim only).
+// Must be declared before /:id so Express doesn't swallow 'rankings' as an id.
+// ==========================================
+
+router.get('/app-feedback/rankings', adminAuth, async (req, res) => {
+    try {
+        const rankings = await queries.getAppFeedbackEquipmentRanking();
+        res.json({ success: true, ...rankings });
+    } catch (err) {
+        console.error('[ERROR] GET /admin/app-feedback/rankings:', err.message);
+        res.status(500).json({ success: false, error: 'Server error' });
+    }
+});
+
+// ==========================================
+// PATCH /api/admin/app-feedback/:id
+// Update workflow status (new → seen → done).
+// ==========================================
+
+router.patch('/app-feedback/:id', adminAuth, async (req, res) => {
+    const { id }     = req.params;
+    const { status } = req.body;
+
+    if (!['new','seen','done'].includes(status)) {
+        return res.status(400).json({ success: false, error: 'Invalid status — must be new|seen|done' });
+    }
+
+    try {
+        await queries.updateAppFeedbackStatus(id, status);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('[ERROR] PATCH /admin/app-feedback/:id:', err.message);
+        res.status(500).json({ success: false, error: 'Server error' });
+    }
+});
+
 export default router;

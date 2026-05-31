@@ -18,6 +18,7 @@ import analyzeRoutes from './routes/analyze.js';
 import healthRoutes from './routes/health.js';
 import brewsRoutes from './routes/brews.js';
 import adminRouter from './routes/admin.js';
+import appFeedbackRouter from './routes/appFeedback.js';
 import registerRoute from './routes/register.js';
 import signupRoute from './routes/signup.js';
 
@@ -158,6 +159,7 @@ app.use('/api/brews', brewsRoutes);
 app.use('/api/analyze-coffee', aiLimiter, analyzeRoutes);
 app.use('/api/health', healthRoutes);
 app.use('/api/admin', adminRouter);
+app.use('/api/app-feedback', appFeedbackRouter);
 
 // ==========================================
 // ERROR HANDLING
