@@ -5,6 +5,7 @@
 import express from 'express';
 import crypto from 'crypto';
 import { queries } from '../db/database.js';
+import { issueOrResendToken } from '../utils/inviteHelper.js';
 
 const router = express.Router();
 
@@ -144,6 +145,54 @@ router.delete('/whitelist/:id', adminAuth, async (req, res) => {
         res.json({ success: true });
     } catch (err) {
         console.error('[ERROR] DELETE /admin/whitelist/:id:', err.message);
+        res.status(500).json({ success: false, error: 'Server error' });
+    }
+});
+
+// ==========================================
+// GET /api/admin/waitlist
+// List all waitlist entries.
+// ==========================================
+
+router.get('/waitlist', adminAuth, async (req, res) => {
+    try {
+        const entries = await queries.getWaitlistWithStatus();
+        res.json({ success: true, entries });
+    } catch (err) {
+        console.error('[ERROR] GET /admin/waitlist:', err.message);
+        res.status(500).json({ success: false, error: 'Server error' });
+    }
+});
+
+// ==========================================
+// POST /api/admin/waitlist/promote
+// Promote = move waitlist → whitelist AND immediately issue + email the access token.
+// ==========================================
+
+router.post('/waitlist/promote', adminAuth, async (req, res) => {
+    const { email } = req.body;
+
+    if (!email || !email.includes('@')) {
+        return res.status(400).json({ success: false, error: 'Invalid email address' });
+    }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    try {
+        // 1. Add to whitelist (idempotent — DO NOTHING if already present)
+        await queries.addToWhitelist(normalizedEmail, '', '', '', 'admin');
+
+        // 2. Issue or re-send the BREW token via the shared invite helper
+        const { resent } = await issueOrResendToken(normalizedEmail);
+
+        // 3. Mark as promoted in the waitlist
+        await queries.markWaitlistPromoted(normalizedEmail);
+
+        console.log(`[OK] Waitlist promoted: ${normalizedEmail} (resent=${resent})`);
+        res.json({ success: true, resent });
+
+    } catch (err) {
+        console.error('[ERROR] POST /admin/waitlist/promote:', err.message);
         res.status(500).json({ success: false, error: 'Server error' });
     }
 });

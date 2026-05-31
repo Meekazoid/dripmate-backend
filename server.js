@@ -19,6 +19,7 @@ import healthRoutes from './routes/health.js';
 import brewsRoutes from './routes/brews.js';
 import adminRouter from './routes/admin.js';
 import registerRoute from './routes/register.js';
+import signupRoute from './routes/signup.js';
 
 dotenv.config();
 
@@ -115,7 +116,7 @@ app.use(cors({
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Device-ID', 'X-Admin-Password']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Device-ID', 'X-Admin-Password', 'X-Admin-Token']
 }));
 
 app.use(express.json({ limit: '10mb' }));
@@ -148,6 +149,7 @@ try {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/auth/register', registerRoute);
+app.use('/api/auth/signup',   signupRoute);
 app.use('/api/user/grinder', grinderRoutes);
 app.use('/api/user/method', methodRoutes);
 app.use('/api/user/water-hardness', waterHardnessRoutes);

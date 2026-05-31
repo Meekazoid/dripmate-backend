@@ -359,6 +359,38 @@ async function runPostgreSQLMigrations() {
     } catch (err) {
         console.log('[DB] Note: additional indexes may already exist');
     }
+
+    // Step 12: Self-service onboarding — waitlist table, whitelist future-proofing columns
+    try {
+        await conn.pool.query(`
+            CREATE TABLE IF NOT EXISTS waitlist_emails (
+                id          SERIAL PRIMARY KEY,
+                email       TEXT UNIQUE NOT NULL,
+                note        TEXT DEFAULT '',
+                created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                promoted    BOOLEAN DEFAULT FALSE,
+                promoted_at TIMESTAMP NULL
+            )
+        `);
+        console.log('[DB] waitlist_emails table ready');
+    } catch (err) {
+        console.log('[DB] Note: waitlist_emails may already exist');
+    }
+
+    // Future-proofing columns on whitelist (no logic built on them yet)
+    try {
+        await conn.pool.query(`ALTER TABLE whitelist ADD COLUMN IF NOT EXISTS invite_source TEXT DEFAULT 'admin'`);
+        await conn.pool.query(`ALTER TABLE whitelist ADD COLUMN IF NOT EXISTS invited_by    INTEGER NULL`);
+    } catch (err) {
+        console.log('[DB] Note: whitelist future-proofing columns may already exist');
+    }
+
+    // Explicit named index so isEmailWhitelisted lookup is covered
+    try {
+        await conn.pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_whitelist_email ON whitelist(email)`);
+    } catch (err) {
+        console.log('[DB] Note: idx_whitelist_email may already exist');
+    }
 }
 
 // ==========================================
@@ -490,6 +522,33 @@ async function runSQLiteMigrations() {
         console.log('[DB] ai_scan_usage_daily table ready');
     } catch (_) {
         // already exists
+    }
+
+    // Step 11: Self-service onboarding — waitlist table, whitelist future-proofing columns
+    try {
+        await conn.exec(`
+            CREATE TABLE IF NOT EXISTS waitlist_emails (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                email       TEXT UNIQUE NOT NULL,
+                note        TEXT DEFAULT '',
+                created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+                promoted    INTEGER DEFAULT 0,
+                promoted_at DATETIME NULL
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_whitelist_email ON whitelist(email);
+        `);
+        console.log('[DB] waitlist_emails table ready');
+    } catch (_) {
+        // already exists
+    }
+
+    // Future-proofing columns on whitelist (no logic built on them yet)
+    const whitelistAlterations = [
+        `ALTER TABLE whitelist ADD COLUMN invite_source TEXT DEFAULT 'admin'`,
+        `ALTER TABLE whitelist ADD COLUMN invited_by    INTEGER NULL`,
+    ];
+    for (const sql of whitelistAlterations) {
+        try { await conn.run(sql); } catch (_) { /* column already exists */ }
     }
 }
 
@@ -943,23 +1002,23 @@ export const queries = {
         `);
     },
 
-    async addToWhitelist(email, name, website, note) {
+    async addToWhitelist(email, name, website, note, inviteSource = 'admin') {
         const normalizedEmail = email.toLowerCase().trim();
         if (dbType === 'postgresql') {
             const result = await q('get',
-                `INSERT INTO whitelist (email, name, website, note)
-                 VALUES ($1, $2, $3, $4)
+                `INSERT INTO whitelist (email, name, website, note, invite_source)
+                 VALUES ($1, $2, $3, $4, $5)
                  ON CONFLICT (email) DO NOTHING
                  RETURNING id`,
-                [normalizedEmail, name, website, note]
+                [normalizedEmail, name, website, note, inviteSource]
             );
             return result?.id ?? null;
         } else {
             const existing = await q('get', `SELECT id FROM whitelist WHERE email = $1`, [normalizedEmail]);
             if (existing) return null;
             const result = await q('run',
-                `INSERT INTO whitelist (email, name, website, note) VALUES ($1, $2, $3, $4)`,
-                [normalizedEmail, name, website, note]
+                `INSERT INTO whitelist (email, name, website, note, invite_source) VALUES ($1, $2, $3, $4, $5)`,
+                [normalizedEmail, name, website, note, inviteSource]
             );
             return result.lastID;
         }
@@ -980,6 +1039,45 @@ export const queries = {
 
     async removeFromWhitelist(id) {
         return q('run', `DELETE FROM whitelist WHERE id = $1`, [id]);
+    },
+
+    async countWhitelist() {
+        const result = await q('get', `SELECT COUNT(*) as count FROM whitelist`);
+        return parseInt(result.count);
+    },
+
+    async addToWaitlist(email, note = '') {
+        const normalizedEmail = email.toLowerCase().trim();
+        return q('run',
+            `INSERT INTO waitlist_emails (email, note) VALUES ($1, $2)`,
+            [normalizedEmail, note]
+        );
+    },
+
+    async getWaitlistEmail(email) {
+        const normalizedEmail = email.toLowerCase().trim();
+        return q('get', `SELECT * FROM waitlist_emails WHERE email = $1`, [normalizedEmail]);
+    },
+
+    async getWaitlistWithStatus() {
+        return q('all',
+            `SELECT email, note, created_at, promoted, promoted_at FROM waitlist_emails ORDER BY created_at DESC`
+        );
+    },
+
+    async markWaitlistPromoted(email) {
+        const normalizedEmail = email.toLowerCase().trim();
+        if (dbType === 'postgresql') {
+            return q('run',
+                `UPDATE waitlist_emails SET promoted = true, promoted_at = CURRENT_TIMESTAMP WHERE email = $1`,
+                [normalizedEmail]
+            );
+        } else {
+            return q('run',
+                `UPDATE waitlist_emails SET promoted = 1, promoted_at = CURRENT_TIMESTAMP WHERE email = $1`,
+                [normalizedEmail]
+            );
+        }
     },
 
     // ------------------------------------------

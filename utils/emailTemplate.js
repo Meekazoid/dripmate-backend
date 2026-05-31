@@ -11,6 +11,61 @@
  * @param {string} frontendUrl - Base URL of the frontend app (from FRONTEND_URL env var)
  * @returns {string} Full HTML string ready to send via Resend
  */
+export function buildWaitlistEmail(email) {
+    return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="margin:0;padding:0;background:#f5f5f0;font-family:'Helvetica Neue',Arial,sans-serif;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f0;padding:48px 20px;">
+                <tr>
+                    <td align="center">
+                        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
+                            <tr>
+                                <td style="padding-bottom:24px;text-align:left;">
+                                    <p style="margin:0 0 3px;font-size:1.3rem;font-weight:200;letter-spacing:0.32em;color:#000000;line-height:1;">drip&middot;mate</p>
+                                    <p style="margin:0;font-size:0.58rem;font-weight:300;letter-spacing:0.22em;text-transform:uppercase;color:#8b6f47;opacity:0.8;">Precision meets Ritual.</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="background:#ffffff;border:1px solid #e0e0e0;border-radius:20px;padding:36px 32px;">
+                                    <p style="margin:0 0 6px;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.2em;color:#bbbbbb;font-weight:400;">Waitlist</p>
+                                    <p style="margin:0 0 16px;font-size:1.05rem;font-weight:400;color:#1a1a1a;line-height:1.4;">You&#x2019;re on the list.</p>
+                                    <p style="margin:0 0 24px;font-size:0.88rem;color:#555555;line-height:1.75;font-weight:300;">
+                                        The drip&middot;mate beta is currently full. We&#x2019;ve saved your place on the waitlist &#x2192; the moment a spot opens up, we&#x2019;ll send your personal access token to this address. No need to sign up again &#x2014; just keep an eye on your inbox.
+                                    </p>
+                                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+                                        <tr><td style="border-top:1px solid #eeeeee;"></td></tr>
+                                    </table>
+                                    <p style="margin:0;font-size:0.88rem;color:#555555;font-weight:300;">Talk soon! &#x2615;</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding-top:20px;">
+                                    <p style="margin:0;font-size:0.68rem;color:#bbbbbb;text-align:center;line-height:1.6;">This email was sent to ${email}.<br>You received it because you joined the drip&middot;mate beta waitlist.</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding-top:12px;text-align:center;border-top:1px solid #eeeeee;margin-top:12px;">
+                                    <p style="margin:0;font-size:0.62rem;color:#cccccc;line-height:1.8;">
+                                        <a href="https://dripmate.app/impressum.html" style="color:#aaaaaa;text-decoration:none;">Impressum</a>
+                                        &nbsp;&middot;&nbsp;
+                                        <a href="https://dripmate.app/datenschutz.html" style="color:#aaaaaa;text-decoration:none;">Datenschutz</a>
+                                    </p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </body>
+        </html>
+    `;
+}
+
 export function buildTokenEmail(email, token, frontendUrl) {
     const loginLink = `${frontendUrl}/?magic=${encodeURIComponent(token)}`;
 
