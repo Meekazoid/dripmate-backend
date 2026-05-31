@@ -106,10 +106,15 @@ dripmate-backend/
 │   ├── grinder.js         # Grinder preferences
 │   ├── health.js          # Health check
 │   ├── method.js          # Brew method preferences
-│   ├── register.js        # Beta registration
-│   ├── admin.js           # Whitelist management
+│   ├── register.js        # Beta registration (backward-compat, whitelist-only)
+│   ├── signup.js          # Self-service beta signup with cap + waitlist
+│   ├── admin.js           # Whitelist / waitlist management + purge
 │   └── waterHardness.js   # Water hardness settings
-├── utils/                  # Utility functions (sanitize, analyzeResponse)
+├── utils/                  # Utility functions
+│   ├── analyzeResponse.js # AI response parsing
+│   ├── emailTemplate.js   # HTML email builders (token + waitlist emails)
+│   ├── inviteHelper.js    # Shared token generation & sending logic
+│   └── sanitize.js        # Input sanitization
 ├── server.js              # Main server file
 ├── package.json           # Dependencies and scripts
 └── .env.example           # Environment variables template
@@ -153,30 +158,30 @@ DATABASE_URL=postgresql://user:password@host:5432/dbname
 ### Optional Dependencies
 - **sqlite3** & **sqlite**: SQLite database support (automatically used in development mode)
 
-## 🔄 Recent Updates (v5.4)
+## 🔄 Recent Updates (v5.5)
 
-See [RELEASE_NOTES_v5.4.md](./RELEASE_NOTES_v5.4.md) for detailed information about:
-- Connection-safe transaction isolation (`withTransaction`)
-- SQLite concurrency serialization
-- PATCH endpoint O(1) optimization
-- Anthropic API differentiated error handling
-- Security hardening (device binding on email endpoint)
-- Startup performance improvements
-- Comprehensive integration test coverage
+See [RELEASE_NOTES_v5.5.md](./RELEASE_NOTES_v5.5.md) for detailed information about:
+- Self-service beta signup (`POST /api/auth/signup`) with configurable cap (`BETA_INVITE_CAP`)
+- Automatic waitlist when cap is reached — confirmation email via Resend
+- Admin waitlist management: list, promote (waitlist → whitelist + immediate token), and full account purge
+- Shared invite helper module (`utils/inviteHelper.js`) — token generation + email sending
+- `waitlist_emails` table and `invite_source` / `invited_by` columns on `whitelist`
+- Atomic purge endpoint (`DELETE /api/admin/purge`) — removes account, coffees (cascade), registration, whitelist, waitlist in one transaction
 
 ## 📝 Environment Variables Reference
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `ANTHROPIC_API_KEY` | Yes | - | Anthropic API key for Claude AI |
-| `RESEND_API_KEY` | Yes | - | Resend API key for magic link emails |
+| `RESEND_API_KEY` | Yes | - | Resend API key for transactional emails (tokens, waitlist) |
 | `NODE_ENV` | No | `development` | Environment mode |
 | `PORT` | No | `3000` | Server port |
 | `DATABASE_URL` | Production only | - | PostgreSQL connection string |
 | `DATABASE_PATH` | No | `./db/dripmate.db` | SQLite database path |
 | `ALLOWED_ORIGINS` | Recommended | - | Comma-separated CORS origins |
-| `FRONTEND_URL` | Production | `https://dripmate.app` | Frontend URL for magic link emails |
-| `ADMIN_PASSWORD` | Optional | - | Password for admin whitelist endpoints |
+| `FRONTEND_URL` | Production | `https://dripmate.app` | Frontend URL for email links |
+| `ADMIN_PASSWORD` | Optional | - | Password for admin whitelist/waitlist endpoints |
+| `BETA_INVITE_CAP` | Optional | `200` | Max self-signup spots before waitlist kicks in |
 
 ## 🤝 Contributing
 
@@ -195,7 +200,7 @@ This project is licensed under the MIT License.
 For issues or questions:
 - Open an issue on GitHub
 - Check the [API Documentation](./API_DOCUMENTATION.md)
-- Review the [Release Notes](./RELEASE_NOTES_v5.4.md)
+- Review the [Release Notes](./RELEASE_NOTES_v5.5.md)
 
 ## 🎯 Quick Start Checklist
 
@@ -208,7 +213,7 @@ For issues or questions:
 
 ## 🌟 Features Overview
 
-### Current Version: 5.4.0
+### Current Version: 5.5.0
 - ✅ User authentication with device binding
 - ✅ Magic link account recovery via email
 - ✅ Coffee inventory management with offline-first sync
@@ -222,6 +227,10 @@ For issues or questions:
 - ✅ Per-user daily AI scan quota (5/day)
 - ✅ Differentiated AI error codes for frontend handling
 - ✅ Comprehensive test coverage (72 tests, 7 suites)
+- ✅ **Self-service beta signup** with configurable cap (`BETA_INVITE_CAP`, default 200)
+- ✅ **Persistent waitlist** — automatic confirmation email when cap is reached
+- ✅ **Admin waitlist management** — list, promote (waitlist → whitelist + instant token), and full account purge
+- ✅ **Atomic purge** — irreversible full removal across all tables in one transaction
 
 ---
 

@@ -1,4 +1,4 @@
-# dripmate API Documentation v5.4
+# dripmate API Documentation v5.5
 
 ## Base URL
 ```
@@ -512,6 +512,157 @@ curl -X POST https://your-backend.railway.app/api/analyze-coffee \
 
 ---
 
+### 10. Self-Service Beta Signup
+
+**POST** `/api/auth/signup`
+
+Public endpoint — no authentication required. Handles self-service onboarding with a configurable beta cap and automatic waitlist. This is the **primary** signup entry point; `POST /api/auth/register` continues to work for backward compatibility but only accepts already-whitelisted emails.
+
+**Request Body:**
+```json
+{ "email": "user@example.com" }
+```
+
+**Response — spot available (or already whitelisted):**
+```json
+{ "status": "invited", "resent": false }
+```
+`resent: true` when the email was already whitelisted and a registration already existed (token re-sent).
+
+**Response — cap reached, email added to waitlist:**
+```json
+{ "status": "waitlisted" }
+```
+A waitlist confirmation email is sent via Resend.
+
+**Response — cap reached, email was already on waitlist:**
+```json
+{ "status": "already_waitlisted" }
+```
+No email is sent.
+
+**Error Response (400):**
+```json
+{ "success": false, "error": "Invalid email address" }
+```
+
+**How it works:**
+1. If the email is already on the whitelist → issue or re-send BREW token (same as `/register`).
+2. Otherwise, read `BETA_INVITE_CAP` (default 200) and `COUNT(*) FROM whitelist` inside a single transaction.
+   - If count < cap → atomically add to `whitelist` (`invite_source='self_signup'`) + create `registrations` row, then send token email.
+   - If count ≥ cap → add to `waitlist_emails` (if not already present) + send waitlist confirmation email.
+
+---
+
+### 11. Beta Registration (Backward-Compatible)
+
+**POST** `/api/auth/register`
+
+Original registration endpoint — still active for backward compatibility. Accepts whitelisted emails only; returns `{ success: true, resent: boolean }`. Returns `403 { error: 'not_whitelisted' }` if the email is not on the whitelist. New integrations should use `/api/auth/signup` instead.
+
+---
+
+### 12. List Waitlist
+
+**GET** `/api/admin/waitlist`
+
+**Auth:** `X-Admin-Token: <session-token>` (obtained via `POST /api/admin/login`)
+
+Returns all waitlist entries ordered by sign-up time.
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "entries": [
+    {
+      "email": "user@example.com",
+      "note": "",
+      "created_at": "2026-05-31T10:00:00.000Z",
+      "promoted": false,
+      "promoted_at": null
+    }
+  ]
+}
+```
+
+---
+
+### 13. Promote Waitlist Entry
+
+**POST** `/api/admin/waitlist/promote`
+
+**Auth:** `X-Admin-Token: <session-token>`
+
+Moves an entry from the waitlist to the whitelist and immediately issues a BREW token + sends the access email. Idempotent — if the email is already whitelisted or has a registration, the existing token is re-sent.
+
+**Request Body:**
+```json
+{ "email": "user@example.com" }
+```
+
+**Response (200):**
+```json
+{ "success": true, "resent": false }
+```
+`resent: true` if a registration already existed (token re-sent rather than newly created).
+
+**What it does (in order):**
+1. Adds email to `whitelist` with `invite_source='admin'` (no-op if already present).
+2. Issues or re-sends a BREW token via the shared `issueOrResendToken` helper.
+3. Sets `promoted=true` + `promoted_at=now` on the `waitlist_emails` row.
+
+---
+
+### 14. Full Account Purge
+
+**DELETE** `/api/admin/purge`
+
+**Auth:** `X-Admin-Token: <session-token>`
+
+⚠️ **Irreversible.** Atomically removes a person from every relevant table in one transaction. Frees a beta slot. Distinct from `DELETE /api/admin/whitelist/:id`, which only removes the whitelist entry.
+
+**Request Body:**
+```json
+{ "email": "user@example.com" }
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "email": "user@example.com",
+  "hadAccount": true,
+  "deletedFrom": ["users", "coffees", "magic_link_tokens", "ai_scan_usage_daily", "registrations", "whitelist"]
+}
+```
+
+`hadAccount: false` example (invited but never activated):
+```json
+{
+  "success": true,
+  "email": "user@example.com",
+  "hadAccount": false,
+  "deletedFrom": ["registrations", "whitelist"]
+}
+```
+
+**`deletedFrom` values:**
+- `users` — account row deleted (present only when `hadAccount: true`)
+- `coffees` — cascaded automatically from `users` delete
+- `magic_link_tokens` — cascaded automatically from `users` delete
+- `ai_scan_usage_daily` — cascaded automatically from `users` delete
+- `registrations` — deleted explicitly (no FK to users)
+- `whitelist` — deleted explicitly (no FK to users)
+- `waitlist_emails` — deleted explicitly, only if a waitlist entry existed
+
+**Error Response (400):**
+```json
+{ "success": false, "error": "Invalid email address" }
+```
+
+---
+
 ## Rate Limits
 
 | Endpoint | Limit | Window |
@@ -660,10 +811,44 @@ CREATE TABLE coffees (
 ```
 
 ### Additional Tables
-- `whitelist` — beta access email whitelist
-- `registrations` — pending registration tokens
-- `magic_link_tokens` — one-time login link tokens (15 min expiry)
-- `ai_scan_usage_daily` — per-user daily AI scan counter
+
+**`whitelist`** — beta access email whitelist
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | SERIAL / AUTOINCREMENT | PK |
+| `email` | TEXT UNIQUE NOT NULL | |
+| `name` | TEXT DEFAULT '' | |
+| `website` | TEXT DEFAULT '' | |
+| `note` | TEXT DEFAULT '' | |
+| `added_at` | TIMESTAMP | |
+| `invite_source` | TEXT DEFAULT 'admin' | `'admin'` or `'self_signup'` |
+| `invited_by` | INTEGER NULL | Reserved for future invite-code feature |
+
+**`registrations`** — pending BREW-XXXXXX tokens
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | SERIAL / AUTOINCREMENT | PK |
+| `email` | TEXT UNIQUE NOT NULL | |
+| `token` | TEXT UNIQUE NOT NULL | Format: `BREW-XXXXXX` |
+| `used` | BOOLEAN DEFAULT FALSE | Set to true after first login |
+| `created_at` | TIMESTAMP | |
+
+**`waitlist_emails`** — emails waiting for a beta slot (v5.5+)
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | SERIAL / AUTOINCREMENT | PK |
+| `email` | TEXT UNIQUE NOT NULL | |
+| `note` | TEXT DEFAULT '' | |
+| `created_at` | TIMESTAMP | |
+| `promoted` | BOOLEAN DEFAULT FALSE | Set to true when promoted to whitelist |
+| `promoted_at` | TIMESTAMP NULL | Timestamp of promotion |
+
+**`magic_link_tokens`** — one-time login link tokens (15 min expiry)
+
+**`ai_scan_usage_daily`** — per-user daily AI scan counter
 
 ---
 
@@ -699,14 +884,15 @@ RESEND_API_KEY=re_xxxxx
 
 # Required in production
 DATABASE_URL=postgresql://user:pass@host:5432/db
-ALLOWED_ORIGINS=https://dripmate.app,https://dripmate.vercel.app
+ALLOWED_ORIGINS=https://dripmate.app
 FRONTEND_URL=https://dripmate.app
 
 # Optional
 NODE_ENV=production
 DATABASE_PATH=./db/dripmate.db   # SQLite only (development)
 PORT=3000
-ADMIN_PASSWORD=your-admin-secret  # For whitelist management
+ADMIN_PASSWORD=your-admin-secret  # For admin whitelist/waitlist endpoints
+BETA_INVITE_CAP=200               # Max self-signup spots before waitlist; default 200
 ```
 
 ---
@@ -726,5 +912,5 @@ All schema migrations run automatically on server startup via `initDatabase()`. 
 For issues or questions:
 - GitHub: [dripmate-backend](https://github.com/Meekazoid/dripmate-backend)
 
-**Version:** 5.4.0  
-**Last Updated:** March 18, 2026
+**Version:** 5.5.0  
+**Last Updated:** May 31, 2026
