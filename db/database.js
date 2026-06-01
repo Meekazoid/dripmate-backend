@@ -1050,6 +1050,7 @@ export const queries = {
                 w.website,
                 w.note,
                 w.added_at,
+                w.invite_source,
                 r.token,
                 CASE
                     WHEN u.id IS NOT NULL THEN 'registered'
