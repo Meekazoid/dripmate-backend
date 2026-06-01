@@ -161,6 +161,14 @@ export function buildTokenEmail(email, token, frontendUrl) {
                                         </tr>
                                     </table>
 
+                                    <!-- PWA install hint -->
+                                    <p style="margin:0 0 4px;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.2em;color:#bbbbbb;font-weight:400;">
+                                        Tip: Install as an app
+                                    </p>
+                                    <p style="margin:0 0 20px;font-size:0.8rem;color:#999999;line-height:1.7;font-weight:300;">
+                                        dripmate works like a native app on your home screen. On Android, open your browser menu (&#x22EE;) and tap &#x2018;Install app&#x2019; or &#x2018;Add to Home screen&#x2019;. On iPhone, tap Share &#x2192; &#x2018;Add to Home Screen&#x2019;. dripmate then opens full-screen, without the browser bar.
+                                    </p>
+
                                     <!-- Sign-off -->
                                     <p style="margin:0;font-size:0.88rem;color:#555555;font-weight:300;">
                                         Happy Brewing! &#x2615;
