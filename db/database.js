@@ -1257,6 +1257,10 @@ export const queries = {
         return q('run', `UPDATE app_feedback SET status = $1 WHERE id = $2`, [status, id]);
     },
 
+    async deleteAppFeedback(id) {
+        return q('run', `DELETE FROM app_feedback WHERE id = $1`, [id]);
+    },
+
     async getAppFeedbackEquipmentRanking() {
         const grinders = await q('all', `
             SELECT lower(trim(grinder_text)) AS name, COUNT(*) AS count

@@ -257,6 +257,28 @@ router.get('/app-feedback/rankings', adminAuth, async (req, res) => {
 });
 
 // ==========================================
+// DELETE /api/admin/app-feedback/:id
+// Delete a single feedback entry. Idempotent: missing id → 404, no crash.
+// The FK app_feedback.user_id is ON DELETE SET NULL, so the user is unaffected.
+// ==========================================
+
+router.delete('/app-feedback/:id', adminAuth, async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const result = await queries.deleteAppFeedback(id);
+        if (result.changes === 0) {
+            return res.status(404).json({ success: false, error: 'Not found' });
+        }
+        console.log(`[OK] Feedback deleted: id=${id}`);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('[ERROR] DELETE /admin/app-feedback/:id:', err.message);
+        res.status(500).json({ success: false, error: 'Server error' });
+    }
+});
+
+// ==========================================
 // PATCH /api/admin/app-feedback/:id
 // Update workflow status (new → seen → done).
 // ==========================================
